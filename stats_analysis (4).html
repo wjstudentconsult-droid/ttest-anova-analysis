@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>โปรแกรมวิเคราะห์ t-test และ One-way ANOVA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#1d2433;--mute:#6a7285;--line:#e1e5ef;--pri:#2557d6;--pri2:#1b43ab;--soft:#eaf0ff;--ok:#0f9d58;--warn:#b45309;--err:#c62828}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Sarabun',system-ui,'Segoe UI',Tahoma,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+.hero{background:linear-gradient(135deg,#2557d6,#4b7bff);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:18px;box-shadow:0 6px 18px rgba(37,87,214,.25)}
+.hero h1{margin:0 0 4px;font-size:26px;font-weight:700}
+.hero p{margin:0;opacity:.92;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(20,30,60,.05)}
+.card h2{margin:0 0 14px;font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px}
+.step{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--pri);color:#fff;font-size:15px;align-items:center;justify-content:center;font-weight:600;flex:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.segbtn{border:2px solid var(--line);background:#fff;border-radius:12px;padding:14px 16px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);transition:.15s}
+.segbtn b{display:block;font-size:17px}
+.segbtn small{color:var(--mute);font-size:13.5px}
+.segbtn:hover{border-color:#a9bdf5}
+.segbtn.active{border-color:var(--pri);background:var(--soft);box-shadow:0 0 0 3px rgba(37,87,214,.12)}
+.segbtn.active b{color:var(--pri2)}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:170px;flex:1}
+.field label,.lab{font-size:14px;color:var(--mute);font-weight:500}
+input[type=text],select{font:inherit;padding:8px 10px;border:1px solid #c9d0e0;border-radius:9px;background:#fff;color:var(--ink);width:100%}
+input[type=text]:focus,select:focus{outline:2px solid #9db6f7;border-color:var(--pri)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-block;padding:7px 14px;border:1.5px solid #c9d0e0;border-radius:999px;font-size:14.5px;background:#fff;transition:.15s;user-select:none}
+.chip input:checked+span{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:500}
+.chip input:focus-visible+span{outline:2px solid #9db6f7}
+.hint{font-size:13.5px;color:var(--mute);margin-top:6px}
+.lblbox{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.lbl-item{display:flex;align-items:center;gap:8px;background:#f7f9fe;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:210px}
+.lbl-item .code{font-weight:600;color:var(--pri2);white-space:nowrap}
+.lbl-item input{padding:6px 8px}
+.ttpick{margin-top:14px;padding:12px 14px;background:#fff8e6;border:1px solid #f1d58a;border-radius:10px}
+.ttpick .pair{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.ttpick select{width:auto;min-width:180px}
+.drop{display:flex;align-items:center;gap:12px;border:2px dashed #aab8e0;background:#f7f9ff;border-radius:12px;padding:14px 16px;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{background:var(--soft);border-color:var(--pri)}
+.drop .ic{font-size:26px}
+.drop input{display:none}
+.xls{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fbfcff}
+.xls .row{margin-top:8px}
+.xls .field{min-width:150px}
+.chk{display:flex;align-items:center;gap:8px;font-size:15px;padding-bottom:8px}
+.info{font-size:14px;color:var(--ok);margin-top:8px}
+.dtwrap{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:10px;max-width:100%;margin-top:14px}
+table.dt{border-collapse:collapse;width:100%}
+table.dt th.dvh{min-width:120px}
+table.dt td input.cell{min-width:90px}
+.nvfield{max-width:230px}
+.dvnames{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
+.dvnames .field{min-width:170px;max-width:240px}
+.addlbl{margin-top:10px}
+.lbl-item .codeinp{width:78px;padding:6px 8px;text-align:center;font:inherit;border:1px solid #c9d0e0;border-radius:9px}
+.lbl-item .xdel{border:none;background:none;color:#b8bfd0;cursor:pointer;font-size:15px;padding:2px 6px;border-radius:6px}
+.lbl-item .xdel:hover{background:#fde8e8;color:var(--err)}
+table.dt th{position:sticky;top:0;background:#eef2fb;font-weight:600;font-size:14px;padding:8px;border-bottom:1px solid var(--line);z-index:1}
+table.dt td{padding:2px 4px;border-bottom:1px solid #f0f2f8}
+table.dt td.idx{width:46px;text-align:center;color:var(--mute);font-size:13.5px;background:#fafbfe}
+table.dt input{width:100%;border:1px solid transparent;border-radius:6px;padding:7px 9px;font:inherit;background:transparent;text-align:right}
+table.dt input:focus{outline:none;border-color:var(--pri);background:#fff}
+.rowdel{border:none;background:none;color:#b8bfd0;cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
+.rowdel:hover{background:#fde8e8;color:var(--err)}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center}
+.btn{font:inherit;font-weight:500;border:1.5px solid #c9d0e0;background:#fff;color:var(--ink);padding:9px 16px;border-radius:10px;cursor:pointer;transition:.15s}
+.btn:hover{background:#f1f4fb;border-color:#a9b6d6}
+.btn.primary{background:var(--pri);border-color:var(--pri);color:#fff;font-size:17px;padding:12px 28px;font-weight:600}
+.btn.primary:hover{background:var(--pri2)}
+.btn.danger{color:var(--err);border-color:#efb8b8}
+.btn.danger:hover{background:#fdeeee}
+.btn.green{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.green:hover{background:#0b7d46}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 16px}
+.msg{border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:15px}
+.msg.error{background:#fdecec;border:1px solid #f3b4b4;color:#8e1b1b}
+.msg.warn{background:#fff6e0;border:1px solid #f1d58a;color:#7a4a05}
+.msg ul{margin:4px 0 0 18px;padding:0}
+.reshead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.reshead h2{margin:0}
+.out-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+#outContent{display:inline-block;min-width:100%;padding:20px 24px;background:#fff}
+footer{text-align:center;color:var(--mute);font-size:13px;margin-top:24px}
+@media(max-width:640px){.seg{grid-template-columns:1fr}.hero h1{font-size:21px}}
+.wrap{max-width:1280px}
+table.dt{table-layout:auto}table.dt th,table.dt td{text-align:center}table.dt th.dvh,table.dt td:not(.idx):not(:last-child){min-width:130px}table.dt td input,table.dt td input.cell{text-align:center;min-width:100px}table.dt th{padding:8px 10px;white-space:nowrap}
+.hero{position:relative}.langbar{position:absolute;top:14px;right:16px;display:flex;gap:6px}.langbar .btn{padding:5px 12px;font-size:14px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.6);color:#fff}.langbar .btn.on{background:#fff;color:var(--pri2)}
+.seg.s3{grid-template-columns:repeat(3,1fr);margin-top:10px}
+table.dt.nogrp th:nth-child(2),table.dt.nogrp td:nth-child(2){display:none}
+.btn.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.gcard{border:1px solid var(--line);border-radius:12px;padding:12px;margin:14px 0;background:#fff}.gcard canvas{max-width:100%;height:auto;display:block}.gh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+@media(max-width:640px){.seg.s3{grid-template-columns:1fr}.langbar{position:static;margin-bottom:8px}}
+</style>
+<style id="outCss">
+.out table.spss th{white-space:normal}.out table.spss th,.out table.spss td{padding:4px 7px}.out .expl{background:#fffbea;border-left:4px solid #e0b100;padding:6px 10px;font-size:12.5px;line-height:1.6;font-family:'Sarabun',Tahoma,Arial,sans-serif;margin-top:6px;max-width:900px;color:#222}
+.out{font-family:Arial,'Sarabun',Tahoma,sans-serif;color:#000;font-size:13px;line-height:1.4}
+.out .otitle{font-size:20px;font-weight:700;margin:0 0 4px;color:#000}
+.out .onote{font-size:12px;color:#444;margin-bottom:6px}
+.out .tt{font-weight:700;font-size:14px;margin:24px 0 6px}
+.out table.spss{border-collapse:collapse;font-size:13px;background:#fff}
+.out table.spss th,.out table.spss td{border:1px solid #b5b5b5;padding:4px 10px;color:#000}
+.out table.spss thead th{background:#f1f1f1;font-weight:600;text-align:center;vertical-align:middle}
+.out table.spss th.rowh{background:#f1f1f1;font-weight:600;text-align:left;vertical-align:top}
+.out table.spss td.lbl{text-align:left;background:#fafafa}
+.out table.spss td.n{text-align:right;white-space:nowrap}
+.out .fn{font-size:11.5px;color:#222;margin-top:4px;max-width:900px}
+.out .summary{margin-top:28px;border:1px solid #b5b5b5;background:#f8fbff;padding:12px 16px;font-size:14px;line-height:1.7;font-family:'Sarabun',Tahoma,Arial,sans-serif}
+.out .summary b.h{display:block;margin-bottom:4px;font-size:15px}
+.out .summary p{margin:4px 0}
+.out .dvhead{font-size:17px;font-weight:700;background:#e8eefc;padding:8px 12px;border-left:5px solid #2557d6;margin:6px 0 14px;font-family:'Sarabun',Tahoma,Arial,sans-serif}
+.out .dvsep{border-top:2px dashed #999;margin:40px 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="langbar" data-skip><button type="button" class="btn on" id="langTh">ไทย</button><button type="button" class="btn" id="langEn">English</button></div>
+    <h1>📊 โปรแกรมวิเคราะห์ t-test และ One-way ANOVA</h1>
+    <p>กรอกข้อมูล / วางจาก Excel / แนบไฟล์ Excel → กดประมวลผล → ได้ตารางสถิติแบบละเอียด คำอธิบาย และกราฟ พร้อมดาวน์โหลดเป็น Excel / PNG / Word</p>
+  </div>
+
+  <!-- STEP 1 -->
+  <section class="card">
+    <h2><span class="step">1</span>เลือกวิธีการวิเคราะห์</h2>
+    <div class="seg">
+      <button type="button" class="segbtn active" data-mode="ttest"><b>t-test</b><small>เปรียบเทียบค่าเฉลี่ย (เลือกชนิดของ t-test ด้านล่าง)</small></button>
+      <button type="button" class="segbtn" data-mode="anova"><b>One-way ANOVA</b><small>เปรียบเทียบค่าเฉลี่ยตั้งแต่ 2 กลุ่มขึ้นไป (มี Post-hoc)</small></button>
+    </div>
+    <div class="seg s3" id="ttSub">
+      <button type="button" class="segbtn sub" data-tt="one"><b>One-Sample t-Test</b><small>เปรียบเทียบค่าเฉลี่ยกับค่าที่กำหนด</small></button>
+      <button type="button" class="segbtn sub active" data-tt="ind"><b>Independent Samples t-Test</b><small>เปรียบเทียบ 2 กลุ่มที่เป็นอิสระต่อกัน</small></button>
+      <button type="button" class="segbtn sub" data-tt="paired"><b>Paired Samples t-Test</b><small>เปรียบเทียบ 2 ค่าที่จับคู่กัน (เช่น ก่อน-หลัง)</small></button>
+    </div>
+    <div class="row">
+      <div class="field" style="max-width:220px"><label for="alpha">ระดับนัยสำคัญ (α)</label>
+        <select id="alpha"><option value="0.05" selected>.05 (ช่วงเชื่อมั่น 95%)</option><option value="0.01">.01 (ช่วงเชื่อมั่น 99%)</option><option value="0.10">.10 (ช่วงเชื่อมั่น 90%)</option></select></div>
+      <div class="field" style="max-width:220px"><label for="dec">จำนวนทศนิยมในตาราง</label>
+        <select id="dec"><option value="2">2 ตำแหน่ง</option><option value="3" selected>3 ตำแหน่ง</option><option value="4">4 ตำแหน่ง</option></select></div>
+      <div class="field" id="muBox" hidden style="max-width:220px"><label for="mu">ค่าทดสอบ (Test Value, μ₀)</label><input type="text" id="mu" value="0" inputmode="decimal"></div>
+    </div>
+    <div id="posthocBox" hidden style="margin-top:16px">
+      <div class="lab">Post-hoc (Multiple Comparisons) — กดเลือกวิธีที่ต้องการแสดง (เลือกได้หลายวิธี / ไม่เลือก = ไม่แสดง)</div>
+      <div class="chips">
+        <label class="chip"><input type="checkbox" class="ph" value="tukey" checked><span>Tukey HSD</span></label>
+        <label class="chip"><input type="checkbox" class="ph" value="bonf"><span>Bonferroni</span></label>
+        <label class="chip"><input type="checkbox" class="ph" value="scheffe"><span>Scheffé</span></label>
+        <label class="chip"><input type="checkbox" class="ph" value="lsd"><span>LSD</span></label>
+        <label class="chip"><input type="checkbox" class="ph" value="gh"><span>Games-Howell</span></label>
+      </div>
+      <div class="hint">Tukey / Bonferroni / Scheffé / LSD ใช้เมื่อความแปรปรวนเท่ากัน • Games-Howell ใช้เมื่อความแปรปรวนไม่เท่ากัน</div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="card">
+    <h2><span class="step">2</span>ตั้งชื่อตัวแปรและป้ายกำกับกลุ่ม (Value Labels)</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="groupName">ชื่อตัวแปรกลุ่ม (ตัวเลขรหัสกลุ่ม)</label><input type="text" id="groupName" value="group" placeholder="เช่น group, เพศ"></div>
+      <div class="field nvfield"><label for="nv" id="nvLab" data-skip></label><input type="number" id="nv" min="1" max="50" step="1" value="1" style="font:inherit;padding:8px 10px;border:1px solid #c9d0e0;border-radius:9px;width:100%"></div>
+    </div>
+    <div class="lab" style="margin-top:16px">ชื่อตัวแปรตาม (ข้อมูลตัวเลข) — ตารางข้อมูลจะมีคอลัมน์เพิ่มตามจำนวนตัวแปร และระบบจะวิเคราะห์ให้ทีละตัวแปร</div>
+    <div class="dvnames" id="dvNames"></div>
+    <div class="lab" style="margin-top:18px">ป้ายกำกับของรหัสกลุ่ม (เช่น 1 = ชาย, 2 = หญิง) — ช่องจะเพิ่มตามรหัสกลุ่มที่พบในข้อมูลโดยอัตโนมัติ หรือกดปุ่มด้านล่างเพื่อเพิ่ม label เองได้ไม่จำกัด</div>
+    <div class="lblbox" id="labelBox"></div>
+    <button type="button" class="btn addlbl" id="addLabel">＋ เพิ่ม label</button>
+    <div class="ttpick" id="ttPick" hidden>
+      <b>พบมากกว่า 2 กลุ่ม — เลือก 2 กลุ่มที่ต้องการเปรียบเทียบด้วย t-test</b>
+      <div class="pair">
+        <div><div class="lab">กลุ่มที่ 1</div><select id="tt1"></select></div>
+        <div><div class="lab">กลุ่มที่ 2</div><select id="tt2"></select></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="card">
+    <h2><span class="step">3</span>ใส่ข้อมูล</h2>
+
+    <label class="drop" id="drop" for="file">
+      <span class="ic">📁</span>
+      <span><b>แนบไฟล์ Excel (.xlsx, .xls, .csv)</b><br><span style="color:var(--mute);font-size:14px">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่ (หรือจะพิมพ์ / วางข้อมูลจาก Excel ลงตารางด้านล่างก็ได้)</span></span>
+      <input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv">
+    </label>
+    <div class="xls" id="xlsPanel" hidden>
+      <div class="lab" id="xlsName"></div>
+      <div class="row">
+        <div class="field"><label for="xlsSheet">ชีต</label><select id="xlsSheet"></select></div>
+        <div class="field"><label for="xlsG">คอลัมน์ ตัวแปรกลุ่ม (รหัสกลุ่ม)</label><select id="xlsG"></select></div>
+        <div id="xlsVBox" style="display:contents"></div>
+        <label class="chk"><input type="checkbox" id="xlsHeader" checked> แถวแรกเป็นชื่อหัวตาราง</label>
+      </div>
+      <div class="info" id="xlsInfo"></div>
+    </div>
+
+    <div class="hint" id="modeHint" data-skip></div>
+    <div class="btnrow" style="margin-top:16px">
+      <span class="lab">ตารางข้อมูล (<span id="rowCount">0</span> แถว) — กด Enter เพื่อไปแถวถัดไป / วางข้อมูลจาก Excel ได้โดยตรง</span>
+    </div>
+    <div class="dtwrap">
+      <table class="dt">
+        <thead><tr id="dtHead"></tr></thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn" id="addRow">＋ เพิ่มแถว</button>
+      <button type="button" class="btn" id="addRow10">＋ เพิ่ม 10 แถว</button>
+      <button type="button" class="btn" id="sampleBtn">🧪 ใส่ข้อมูลตัวอย่าง</button>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="btn primary" id="runBtn">▶ ประมวลผล</button>
+    <button type="button" class="btn danger" id="resetBtn">↺ Reset ข้อมูล</button>
+  </div>
+
+  <div id="msg"></div>
+
+  <!-- RESULTS -->
+  <section class="card" id="resultCard" hidden>
+    <div class="reshead">
+      <h2>ผลการวิเคราะห์</h2>
+      <div class="btnrow" style="margin:0">
+        <button type="button" class="btn" id="tabTable">📋 นำเสนอเป็นตาราง</button>
+        <button type="button" class="btn" id="tabGraph">📈 นำเสนอกราฟ</button>
+      </div>
+    </div>
+    <div id="paneTable" hidden>
+      <div class="btnrow" style="margin:0 0 12px">
+        <button type="button" class="btn green" id="saveXlsx">📊 ดาวน์โหลดตารางเป็น Excel</button>
+        <button type="button" class="btn green" id="savePng">🖼 บันทึกเป็นรูปภาพ (PNG)</button>
+        <button type="button" class="btn green" id="saveWord">📄 บันทึกเป็นไฟล์ Word</button>
+      </div>
+      <div class="out-scroll" id="outScroll"><div id="outContent" class="out"></div></div>
+    </div>
+    <div id="paneGraph" hidden><div id="graphBox"></div></div>
+  </section>
+
+  <footer>คำนวณด้วย JavaScript ในเครื่องของคุณ — ข้อมูลไม่ถูกส่งออกไปที่ใด</footer>
+</div>
+
+<script>
+//==STATS-START==
+const Stat=(function(){
+  /* ---------- special functions ---------- */
+  function lgamma(z){
+    if(z<0.5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*z)))-lgamma(1-z);
+    z-=1;
+    const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+    let x=c[0]; for(let i=1;i<9;i++) x+=c[i]/(z+i);
+    const t=z+7.5;
+    return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);
+  }
+  function betacf(a,b,x){
+    const FP=1e-300; let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;
+    if(Math.abs(d)<FP)d=FP; d=1/d; let h=d;
+    for(let m=1;m<=500;m++){
+      const m2=2*m; let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FP)d=FP; c=1+aa/c; if(Math.abs(c)<FP)c=FP; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FP)d=FP; c=1+aa/c; if(Math.abs(c)<FP)c=FP; d=1/d;
+      const del=d*c; h*=del; if(Math.abs(del-1)<3e-15)break;
+    }
+    return h;
+  }
+  function ibeta(x,a,b){ // regularized incomplete beta I_x(a,b)
+    if(x<=0)return 0; if(x>=1)return 1;
+    const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+    if(x<(a+1)/(a+b+2)) return bt*betacf(a,b,x)/a;
+    return 1-bt*betacf(b,a,1-x)/b;
+  }
+  function gser(a,x,lg){let ap=a,sum=1/a,del=sum;for(let n=0;n<1000;n++){ap++;del*=x/ap;sum+=del;if(Math.abs(del)<Math.abs(sum)*1e-16)break;}return sum*Math.exp(-x+a*Math.log(x)-lg);}
+  function gcf(a,x,lg){
+    let b=x+1-a,c=1e300,d=1/b,h=d;
+    for(let i=1;i<1000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<1e-15)break;}
+    return Math.exp(-x+a*Math.log(x)-lg)*h;
+  }
+  function gammaQ(a,x,lg){ if(x<=0)return 1; return x<a+1?1-gser(a,x,lg):gcf(a,x,lg); }
+  const LGH=lgamma(0.5);
+  function pnorm(z){ const q=0.5*gammaQ(0.5,z*z/2,LGH); return z<0?q:1-q; }
+
+  /* ---------- root finding ---------- */
+  function solve(f,lo,hi,tol,maxit){
+    tol=tol||1e-12; maxit=maxit||200;
+    let flo=f(lo),fhi=f(hi); if(flo===0)return lo; if(fhi===0)return hi;
+    let side=0,mid=lo;
+    for(let i=0;i<maxit;i++){
+      mid=(lo*fhi-hi*flo)/(fhi-flo); if(!isFinite(mid)||mid<=Math.min(lo,hi)||mid>=Math.max(lo,hi)) mid=(lo+hi)/2;
+      const fm=f(mid);
+      if(Math.abs(fm)<tol||Math.abs(hi-lo)<1e-13*Math.max(1,Math.abs(mid)))return mid;
+      if(fm*flo>0){lo=mid;flo=fm;if(side===-1)fhi/=2;side=-1;}
+      else{hi=mid;fhi=fm;if(side===1)flo/=2;side=1;}
+    }
+    return mid;
+  }
+
+  /* ---------- t, F, normal ---------- */
+  function ptTwo(t,df){ if(!isFinite(t)||!isFinite(df)||df<=0)return isFinite(t)?NaN:(t===Infinity||t===-Infinity?0:NaN); return ibeta(df/(df+t*t),df/2,0.5); }
+  function pF(F,d1,d2){ if(F!==F||!(d1>0)||!(d2>0))return NaN; if(F===Infinity)return 0; if(F<=0)return 1; return ibeta(d2/(d2+d1*F),d2/2,d1/2); }
+  function tcrit(alpha,df){
+    if(!(df>0)||!isFinite(df))return isFinite(df)?NaN:qnorm(alpha);
+    const la=Math.log(alpha), f=t=>Math.log(Math.max(ptTwo(t,df),1e-300))-la;
+    let hi=4; while(f(hi)>0&&hi<1e9)hi*=2;
+    return solve(f,0,hi,1e-13);
+  }
+  function fcrit(alpha,d1,d2){
+    if(!(d1>0)||!(d2>0))return NaN;
+    const la=Math.log(alpha), f=x=>Math.log(Math.max(pF(x,d1,d2),1e-300))-la;
+    let hi=8; while(f(hi)>0&&hi<1e12)hi*=2;
+    return solve(f,0,hi,1e-13);
+  }
+  function qnorm(alpha){ // two-sided critical z
+    return solve(z=>pnorm(z)-(1-alpha/2),0,40,1e-14);
+  }
+
+  /* ---------- Studentized range (Tukey) ---------- */
+  function gl(n){
+    const x=new Array(n),w=new Array(n),m=(n+1)>>1;
+    for(let i=0;i<m;i++){
+      let z=Math.cos(Math.PI*(i+0.75)/(n+0.5)),pp=1;
+      for(let it=0;it<100;it++){
+        let p1=1,p2=0;
+        for(let j=0;j<n;j++){const p3=p2;p2=p1;p1=((2*j+1)*z*p2-j*p3)/(j+1);}
+        pp=n*(z*p1-p2)/(z*z-1); const z1=z; z=z1-p1/pp; if(Math.abs(z-z1)<1e-15)break;
+      }
+      x[i]=-z;x[n-1-i]=z;w[i]=w[n-1-i]=2/((1-z*z)*pp*pp);
+    }
+    return {x,w};
+  }
+  const GL8=gl(8),GL6=gl(6);
+  const ZN=[],ZW=[],ZP=[];
+  (function(){
+    const panels=8,lo=-8,hi=8,h=(hi-lo)/panels;
+    for(let p=0;p<panels;p++){const a=lo+p*h,c=a+h/2,r=h/2;
+      for(let i=0;i<8;i++){const z=c+r*GL8.x[i];ZN.push(z);ZW.push(r*GL8.w[i]*Math.exp(-z*z/2)/Math.sqrt(2*Math.PI));ZP.push(pnorm(z));}}
+  })();
+  function Wrange(w,k){ // CDF of range of k std normals
+    let s=0; const km=k-1;
+    for(let i=0;i<ZN.length;i++){let d=ZP[i]-pnorm(ZN[i]-w); if(d<0)d=0; s+=ZW[i]*Math.pow(d,km);}
+    return k*s;
+  }
+  function ptukey(q,k,df){
+    if(q!==q)return NaN; if(!(q>0))return 0; if(q===Infinity)return 1;
+    if(!isFinite(df)||df>1e7)return Math.min(1,Wrange(q,k));
+    const sd=Math.sqrt(2*df),vlo=Math.max(0,df-9*sd),vhi=df+12*sd+30;
+    const slo=Math.sqrt(vlo/df),shi=Math.sqrt(vhi/df),panels=20,h=(shi-slo)/panels;
+    const lc=(df/2)*Math.log(df)-lgamma(df/2)-(df/2-1)*Math.LN2;
+    let tot=0;
+    for(let p=0;p<panels;p++){const a=slo+p*h,c=a+h/2,r=h/2;
+      for(let i=0;i<6;i++){const s=c+r*GL6.x[i];
+        const dens=Math.exp(lc+(df-1)*Math.log(s)-df*s*s/2);
+        tot+=r*GL6.w[i]*dens*Wrange(q*s,k);}}
+    return Math.min(1,Math.max(0,tot));
+  }
+  function qtukey(p,k,df){
+    let lo=0,hi=2; while(ptukey(hi,k,df)<p&&hi<1e4){lo=hi;hi*=2;}
+    return solve(q=>ptukey(q,k,df)-p,lo,hi,1e-9,60);
+  }
+
+  /* ---------- descriptive & tests ---------- */
+  function desc(a){
+    const n=a.length; let s=0,mn=Infinity,mx=-Infinity;
+    for(let i=0;i<n;i++){const x=a[i];s+=x;if(x<mn)mn=x;if(x>mx)mx=x;}
+    const mean=s/n; let ss=0; for(let i=0;i<n;i++){const d=a[i]-mean;ss+=d*d;}
+    const v=n>1?ss/(n-1):NaN,sd=Math.sqrt(v);
+    return {n,mean,ss,var:v,sd,se:sd/Math.sqrt(n),min:mn,max:mx};
+  }
+  function median(a){const b=a.slice().sort((x,y)=>x-y),n=b.length;return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2;}
+  function oneway(arrs){
+    const ds=arrs.map(desc),k=ds.length; let N=0,s=0;
+    ds.forEach(d=>{N+=d.n;s+=d.n*d.mean;}); const M=s/N;
+    let ssb=0,ssw=0; ds.forEach(d=>{ssb+=d.n*(d.mean-M)*(d.mean-M);ssw+=d.ss;});
+    const df1=k-1,df2=N-k,msb=ssb/df1,msw=ssw/df2,F=msb/msw;
+    return {N,k,M,ssb,ssw,sst:ssb+ssw,df1,df2,msb,msw,F,p:pF(F,df1,df2)};
+  }
+  function levene(arrs,center){
+    const z=arrs.map(a=>{const c=center==='median'?median(a):desc(a).mean;return a.map(x=>Math.abs(x-c));});
+    const r=oneway(z); if(r.ssw===0&&r.ssb===0){r.F=NaN;r.p=NaN;} return r;
+  }
+  function welch(ds){
+    const k=ds.length; if(ds.some(d=>!(d.var>0)||d.n<2))return {F:NaN,df1:k-1,df2:NaN,p:NaN};
+    const w=ds.map(d=>d.n/d.var),W=w.reduce((a,b)=>a+b,0);
+    const xt=ds.reduce((s,d,i)=>s+w[i]*d.mean,0)/W;
+    const num=ds.reduce((s,d,i)=>s+w[i]*(d.mean-xt)*(d.mean-xt),0)/(k-1);
+    const lam=3*ds.reduce((s,d,i)=>s+Math.pow(1-w[i]/W,2)/(d.n-1),0)/(k*k-1);
+    const F=num/(1+2*(k-2)*lam/3), df2=1/lam;
+    return {F,df1:k-1,df2,p:pF(F,k-1,df2)};
+  }
+  function brownForsythe(ds){
+    const k=ds.length; if(ds.some(d=>!isFinite(d.var)||d.n<2))return {F:NaN,df1:k-1,df2:NaN,p:NaN};
+    const N=ds.reduce((s,d)=>s+d.n,0),M=ds.reduce((s,d)=>s+d.n*d.mean,0)/N;
+    const num=ds.reduce((s,d)=>s+d.n*(d.mean-M)*(d.mean-M),0);
+    const cs=ds.map(d=>(1-d.n/N)*d.var),den=cs.reduce((a,b)=>a+b,0);
+    const F=num/den,df2=1/cs.reduce((s,c,i)=>s+Math.pow(c/den,2)/(ds[i].n-1),0);
+    return {F,df1:k-1,df2,p:pF(F,k-1,df2)};
+  }
+  function posthoc(method,ds,MSW,dfW,alpha){
+    const k=ds.length,m=k*(k-1)/2; const res=Array.from({length:k},()=>Array(k).fill(null));
+    let qc=null,tc=null,fc=null;
+    if(method==='tukey')qc=qtukey(1-alpha,k,dfW);
+    if(method==='bonf')tc=tcrit(alpha/m,dfW);
+    if(method==='lsd')tc=tcrit(alpha,dfW);
+    if(method==='scheffe')fc=fcrit(alpha,k-1,dfW);
+    for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){
+      const a=ds[i],b=ds[j],diff=a.mean-b.mean; let se,p,w;
+      if(method==='gh'){
+        const va=a.var/a.n,vb=b.var/b.n; se=Math.sqrt(va+vb);
+        const df=Math.pow(va+vb,2)/(va*va/(a.n-1)+vb*vb/(b.n-1));
+        if(isFinite(se)&&isFinite(df)&&se>0){const q=Math.SQRT2*Math.abs(diff)/se;p=1-ptukey(q,k,df);w=qtukey(1-alpha,k,df)/Math.SQRT2*se;}
+        else{p=NaN;w=NaN;}
+      }else{
+        se=Math.sqrt(MSW*(1/a.n+1/b.n)); const t=diff/se;
+        if(method==='tukey'){p=1-ptukey(Math.abs(t)*Math.SQRT2,k,dfW);w=qc/Math.SQRT2*se;}
+        else if(method==='bonf'){p=Math.min(1,m*ptTwo(Math.abs(t),dfW));w=tc*se;}
+        else if(method==='lsd'){p=ptTwo(Math.abs(t),dfW);w=tc*se;}
+        else{p=pF(t*t/(k-1),k-1,dfW);w=Math.sqrt((k-1)*fc)*se;}
+      }
+      if(p<0)p=0;
+      res[i][j]={diff,se,p,lo:diff-w,hi:diff+w};
+      res[j][i]={diff:-diff,se,p,lo:-diff-w,hi:-diff+w};
+    }
+    return res;
+  }
+  return {lgamma,ibeta,pnorm,ptTwo,pF,tcrit,fcrit,qnorm,ptukey,qtukey,desc,median,oneway,levene,welch,brownForsythe,posthoc,solve};
+})();
+//==STATS-END==
+</script>
+
+<script>
+/* ==================== UI + SPSS-style rendering ==================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let mode='ttest', DEC=3, lastCodes=[], lastKey='', tG1=null, tG2=null, tt='ind', lang='th';
+const L=(th,en)=>lang==='th'?th:en;
+const isPair=()=>mode==='ttest'&&tt==='paired';
+const hasGroup=()=>mode==='anova'||tt==='ind';
+const labels={};
+const tbody=$('dataBody');
+
+/* ---------- number helpers ---------- */
+function parseNum(s){
+  if(s===null||s===undefined)return NaN;
+  if(typeof s==='number')return isFinite(s)?s:NaN;
+  let t=String(s).trim().replace(/\s/g,''); if(t==='')return NaN;
+  if(/^[-+]?\d+,\d+$/.test(t))t=t.replace(',','.'); else t=t.replace(/,/g,'');
+  if(!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t))return NaN;
+  return Number(t);
+}
+const fx=(x,d)=>{d=(d===undefined)?DEC:d; if(x===null||x===undefined||!isFinite(x))return '.'; let s=x.toFixed(d); if(/^-0\.?0*$/.test(s))s=s.slice(1); return s;};
+const fsig=p=>{if(p===null||p===undefined||!isFinite(p))return '.'; if(p<0.0005)return '.000'; if(p>=0.9995)return '1.000'; return p.toFixed(3).replace(/^0/,'');};
+const fdf=x=>!isFinite(x)?'.':(Number.isInteger(x)?String(x):x.toFixed(DEC));
+const pTxt=p=>!isFinite(p)?'p = .':(p<0.001?'p < .001':'p = '+p.toFixed(3).replace(/^0/,''));
+const aStr=a=>String(a).replace(/^0/,'');
+
+/* ---------- messages ---------- */
+function showMsg(type,list){
+  $('msg').innerHTML='<div class="msg '+type+'"><b>'+(type==='error'?L('⚠ พบข้อผิดพลาด','⚠ Errors found'):L('ℹ ข้อสังเกต','ℹ Notes'))+'</b><ul>'+list.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
+}
+function addMsg(type,list){ if(!list.length)return; $('msg').insertAdjacentHTML('beforeend','<div class="msg '+type+'"><b>'+L('ℹ ข้อสังเกต','ℹ Notes')+'</b><ul>'+list.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'); }
+const hideMsg=()=>{$('msg').innerHTML='';};
+
+/* ---------- mode ---------- */
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.segbtn[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  $('posthocBox').hidden=(m!=='anova'); updateModeUI();
+  $('resultCard').hidden=true; hideMsg();
+  refreshGroups(true);
+}
+document.querySelectorAll('.segbtn[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('[data-tt]').forEach(b=>b.addEventListener('click',()=>{tt=b.dataset.tt;$('resultCard').hidden=true;hideMsg();updateModeUI();refreshGroups(true);}));
+function updateModeUI(){
+  document.querySelectorAll('[data-tt]').forEach(b=>b.classList.toggle('active',b.dataset.tt===tt));
+  $('ttSub').hidden=mode!=='ttest'; $('muBox').hidden=!(mode==='ttest'&&tt==='one');
+  const g=hasGroup(); [$('groupName').parentElement,$('labelBox'),$('addLabel'),$('labelBox').previousElementSibling,$('xlsG').parentElement].forEach(e=>e.hidden=!g);
+  document.querySelector('table.dt').classList.toggle('nogrp',!g);
+  const u=Math.max(1,parseInt($('nv').value)||1),want=isPair()?2*u:u;
+  if(want!==nv)setNV(want,true);
+  buildHead(); renderDvNames();
+  $('nvLab').textContent=isPair()?L('จำนวนคู่ตัวแปรที่จะวิเคราะห์','Number of variable pairs'):L('จำนวนตัวแปรตามที่จะวิเคราะห์','Number of dependent variables');
+  $('modeHint').textContent=mode==='anova'||tt==='ind'?L('รูปแบบข้อมูล: คอลัมน์แรก = รหัสกลุ่ม, คอลัมน์ถัดไป = ตัวแปรตาม','Data format: first column = group code, next columns = dependent variable(s)'):tt==='one'?L('รูปแบบข้อมูล: ใส่ค่าตัวเลขของแต่ละตัวแปร แล้วกำหนดค่าทดสอบ (μ₀) ด้านบน','Data format: numeric values of each variable; set the test value (μ₀) above'):L('รูปแบบข้อมูล: แต่ละคู่ใช้ 2 คอลัมน์ (เช่น ก่อน / หลัง) แถวเดียวกัน = หน่วยตัวอย่างเดียวกัน','Data format: each pair uses 2 columns (e.g. before / after); one row = one subject');
+}
+
+/* ---------- data table (หลายตัวแปรตาม) ---------- */
+let nv=1, extras=[];
+const MAXNV=50;
+const dvNames=['score'];
+const dvName=j=>(dvNames[j]||'').trim()||('var'+(j+1));
+
+function buildHead(){
+  let h='<th>#</th><th>'+L('ตัวแปรกลุ่ม (ตัวเลข)','Group variable (numeric)')+'</th>';
+  for(let j=0;j<nv;j++)h+='<th class="dvh" data-j="'+j+'">'+esc(dvName(j))+'</th>';
+  $('dtHead').innerHTML=h+'<th></th>';
+}
+function renderDvNames(){
+  const box=$('dvNames'); box.innerHTML='';
+  for(let j=0;j<nv;j++){
+    const d=document.createElement('div'); d.className='field';
+    d.innerHTML='<label>'+(isPair()?L('คู่ที่ '+(Math.floor(j/2)+1)+' — ตัวแปรที่ '+(j%2+1),'Pair '+(Math.floor(j/2)+1)+' — variable '+(j%2+1)):L('ตัวแปรตามที่ '+(j+1),'Dependent variable '+(j+1)))+'</label>';
+    const inp=document.createElement('input'); inp.type='text'; inp.value=dvNames[j]; inp.placeholder='เช่น score, คะแนน';
+    inp.addEventListener('input',()=>{dvNames[j]=inp.value;const th=document.querySelector('#dtHead th[data-j="'+j+'"]');if(th)th.textContent=dvName(j);});
+    d.appendChild(inp); box.appendChild(d);
+  }
+}
+function addRow(g,vs){
+  const tr=document.createElement('tr');
+  let h='<td class="idx"></td><td><input class="cell" data-c="0" inputmode="decimal" autocomplete="off"></td>';
+  for(let j=0;j<nv;j++)h+='<td><input class="cell" data-c="'+(j+1)+'" inputmode="decimal" autocomplete="off"></td>';
+  h+='<td><button type="button" class="rowdel" title="ลบแถว" tabindex="-1">✕</button></td>';
+  tr.innerHTML=h;
+  const ins=tr.querySelectorAll('.cell');
+  if(g!==undefined&&g!==null)ins[0].value=g;
+  if(vs)vs.forEach((v,j)=>{if(j<nv&&v!==undefined&&v!==null)ins[j+1].value=v;});
+  tbody.appendChild(tr); return tr;
+}
+function renumber(){[...tbody.rows].forEach((tr,i)=>{tr.cells[0].textContent=i+1;});$('rowCount').textContent=tbody.rows.length;}
+function addRows(n){for(let i=0;i<n;i++)addRow();renumber();}
+function setRows(arr){
+  tbody.innerHTML=''; arr.forEach(r=>addRow(r[0],r[1])); while(tbody.rows.length<5)addRow();
+  renumber(); refreshGroups(true);
+}
+function readRows(){
+  return [...tbody.rows].map((tr,i)=>{const c=[...tr.querySelectorAll('.cell')].map(x=>x.value);return {i:i+1,g:c[0],vs:c.slice(1)};});
+}
+function setNV(n,noImport){
+  n=Math.max(1,Math.min(MAXNV,Math.floor(n)||1)); if(isPair()&&n%2)n++;
+  const old=readRows(); nv=n;
+  while(dvNames.length<nv)dvNames.push('score'+(dvNames.length+1));
+  $('nv').value=isPair()?nv/2:nv; buildHead(); renderDvNames();
+  tbody.innerHTML=''; old.forEach(r=>addRow(r.g,r.vs)); while(tbody.rows.length<5)addRow(); renumber();
+  if(!noImport&&wb&&!$('xlsPanel').hidden){buildColSelects();importSheet();}
+  else refreshGroups(true);
+}
+$('nv').addEventListener('change',e=>setNV(parseFloat(e.target.value)*(isPair()?2:1)));
+
+tbody.addEventListener('input',()=>scheduleRefresh());
+tbody.addEventListener('click',e=>{
+  if(e.target.classList.contains('rowdel')){e.target.closest('tr').remove(); if(!tbody.rows.length)addRow(); renumber(); refreshGroups();}
+});
+tbody.addEventListener('keydown',e=>{
+  const inp=e.target; if(!inp.classList||!inp.classList.contains('cell'))return;
+  const tr=inp.closest('tr'),c=inp.dataset.c,pick=r=>r.querySelector('.cell[data-c="'+c+'"]');
+  if(e.key==='Enter'||e.key==='ArrowDown'){
+    e.preventDefault(); let nx=tr.nextElementSibling;
+    if(!nx){ if(e.key!=='Enter')return; addRow(); renumber(); nx=tr.nextElementSibling; }
+    const t=pick(nx); t.focus(); t.select();
+  }else if(e.key==='ArrowUp'){
+    e.preventDefault(); const pv=tr.previousElementSibling; if(pv){const t=pick(pv);t.focus();t.select();}
+  }
+});
+tbody.addEventListener('paste',e=>{
+  const inp=e.target; if(!inp.classList||!inp.classList.contains('cell'))return;
+  const text=(e.clipboardData||window.clipboardData).getData('text');
+  if(!/[\t\n\r]/.test(text.trim()))return;
+  e.preventDefault();
+  const lines=text.replace(/\r/g,'').split('\n'); while(lines.length&&lines[lines.length-1].trim()==='')lines.pop();
+  const rows=lines.map(l=>l.split('\t'));
+  const startRow=[...tbody.rows].indexOf(inp.closest('tr')), startCol=+inp.dataset.c;
+  let hdr=null;
+  if(rows.length>1&&rows[0].every(c=>isNaN(parseNum(c)))&&rows[1].some(c=>!isNaN(parseNum(c))))hdr=rows.shift();
+  const maxc=rows.reduce((m,r)=>Math.max(m,r.length),hdr?hdr.length:0);
+  const needNV=startCol+maxc-1;
+  if(needNV>nv)setNV(needNV,true);
+  if(hdr){
+    if(startCol===0){ if(hdr[0]&&hdr[0].trim())$('groupName').value=hdr[0].trim(); hdr.slice(1).forEach((x,j)=>{if(x.trim()&&j<nv)dvNames[j]=x.trim();}); }
+    else hdr.forEach((x,ci)=>{const j=startCol-1+ci; if(x.trim()&&j>=0&&j<nv)dvNames[j]=x.trim();});
+    buildHead(); renderDvNames();
+  }
+  rows.forEach((cells,ri)=>{
+    const r=startRow+ri; while(tbody.rows.length<=r)addRow();
+    const ins=tbody.rows[r].querySelectorAll('.cell');
+    cells.forEach((c,ci)=>{const col=startCol+ci; if(col<ins.length)ins[col].value=c.trim();});
+  });
+  renumber(); refreshGroups(true);
+});
+$('addRow').onclick=()=>{addRows(1);const l=tbody.rows[tbody.rows.length-1].querySelector('.cell');l.focus();l.scrollIntoView({block:'nearest'});};
+$('addRow10').onclick=()=>addRows(10);
+
+/* ---------- group labels (เพิ่มได้ไม่จำกัด) ---------- */
+let rt; function scheduleRefresh(){clearTimeout(rt);rt=setTimeout(()=>refreshGroups(false),250);}
+function detectCodes(){
+  const s=new Set(); readRows().forEach(r=>{const n=parseNum(r.g);if(!isNaN(n))s.add(n);});
+  return [...s].sort((a,b)=>a-b);
+}
+function shownCodes(){
+  const det=detectCodes(); lastCodes=det;
+  const base=det.length?det:(mode==='anova'?[1,2,3]:[1,2]);
+  const set=new Set(base); extras.forEach(c=>{if(typeof c==='number'&&!isNaN(c))set.add(c);});
+  return [...set].sort((a,b)=>a-b);
+}
+function refreshGroups(force){
+  const shown=shownCodes();
+  const key=mode+'|'+shown.join(',');
+  if(force||key!==lastKey){lastKey=key;renderLabels(shown);}
+  renderTT(lastCodes);
+}
+function renderLabels(shown){
+  const box=$('labelBox'); box.innerHTML='';
+  shown.forEach(c=>{
+    const d=document.createElement('div'); d.className='lbl-item';
+    const manual=extras.includes(c)&&!lastCodes.includes(c);
+    if(manual){
+      const ci=document.createElement('input'); ci.type='number'; ci.step='any'; ci.className='codeinp'; ci.value=c; ci.title='รหัสกลุ่ม';
+      ci.addEventListener('change',()=>{
+        const nc=parseNum(ci.value); if(isNaN(nc)){ci.value=c;return;}
+        const idx=extras.indexOf(c); if(idx>=0)extras[idx]=nc;
+        if(labels[c]!==undefined&&labels[nc]===undefined){labels[nc]=labels[c];delete labels[c];}
+        refreshGroups(true);
+      });
+      d.appendChild(ci); d.insertAdjacentHTML('beforeend','<span class="code">=</span>');
+    }else d.innerHTML='<span class="code">'+esc(c)+' =</span>';
+    const inp=document.createElement('input'); inp.type='text'; inp.placeholder=L('ชื่อกลุ่ม (ไม่บังคับ)','Group name (optional)'); inp.value=labels[c]||''; inp.dataset.lab=c;
+    inp.addEventListener('input',()=>{labels[c]=inp.value; renderTT(lastCodes);});
+    d.appendChild(inp);
+    if(manual){
+      const x=document.createElement('button'); x.type='button'; x.className='xdel'; x.title='ลบ label นี้'; x.textContent='✕';
+      x.onclick=()=>{extras=extras.filter(v=>v!==c); delete labels[c]; refreshGroups(true);};
+      d.appendChild(x);
+    }
+    box.appendChild(d);
+  });
+}
+$('addLabel').onclick=()=>{
+  const shown=shownCodes(), next=shown.length?Math.floor(Math.max(...shown))+1:1;
+  extras.push(next); refreshGroups(true);
+  const t=$('labelBox').querySelector('input[data-lab="'+next+'"]'); if(t){t.focus();t.scrollIntoView({block:'nearest'});}
+};
+function renderTT(codes){
+  const box=$('ttPick');
+  if(mode!=='ttest'||tt!=='ind'||codes.length<=2){box.hidden=true;return;}
+  box.hidden=false;
+  if(!codes.includes(tG1))tG1=codes[0];
+  if(!codes.includes(tG2)||tG2===tG1)tG2=codes.find(c=>c!==tG1);
+  const opt=c=>'<option value="'+c+'">'+esc(c)+(labels[c]?' = '+esc(labels[c]):'')+'</option>';
+  $('tt1').innerHTML=codes.map(opt).join(''); $('tt2').innerHTML=codes.map(opt).join('');
+  $('tt1').value=tG1; $('tt2').value=tG2;
+}
+$('tt1').onchange=e=>{tG1=parseFloat(e.target.value);};
+$('tt2').onchange=e=>{tG2=parseFloat(e.target.value);};
+
+/* ---------- Excel import ---------- */
+let wb=null, xlsRows=[], xlsFile='';
+const colName=i=>{let s='',n=i;do{s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)-1;}while(n>=0);return s;};
+$('file').addEventListener('change',e=>{loadFile(e.target.files[0]);});
+const drop=$('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
+function loadFile(f){
+  if(!f)return;
+  if(typeof XLSX==='undefined'){showMsg('error',['โหลดไลบรารีอ่านไฟล์ Excel ไม่สำเร็จ (ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อโหลด SheetJS) — ลองคัดลอกข้อมูลจาก Excel แล้ววางลงในตารางแทนได้']);return;}
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    try{
+      wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'}); xlsFile=f.name;
+      $('xlsSheet').innerHTML=wb.SheetNames.map((n,i)=>'<option value="'+i+'">'+esc(n)+'</option>').join('');
+      $('xlsPanel').hidden=false; $('xlsName').textContent='ไฟล์: '+f.name;
+      loadSheet(0);
+    }catch(err){showMsg('error',['อ่านไฟล์ไม่สำเร็จ: '+err.message]);}
+  };
+  rd.readAsArrayBuffer(f);
+}
+function loadSheet(i){
+  const ws=wb.Sheets[wb.SheetNames[i]];
+  xlsRows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true}).filter(r=>r.some(c=>c!==''&&c!==null));
+  if(!xlsRows.length){showMsg('error',['ชีตนี้ไม่มีข้อมูล']);return;}
+  const first=xlsRows[0]; $('xlsHeader').checked=first.some(c=>typeof c==='string'&&c.trim()!==''&&isNaN(parseNum(c)));
+  buildColSelects(); importSheet();
+}
+function buildColSelects(){
+  const ncol=Math.max(...xlsRows.slice(0,100).map(r=>r.length)),hdr=$('xlsHeader').checked;
+  let opts=''; for(let i=0;i<ncol;i++){const h=hdr&&xlsRows[0][i]!==''&&xlsRows[0][i]!==undefined?' — '+esc(xlsRows[0][i]):'';opts+='<option value="'+i+'">'+L('คอลัมน์ ','Column ')+colName(i)+h+'</option>';}
+  $('xlsG').innerHTML=opts; $('xlsG').value=0;
+  const box=$('xlsVBox'); box.innerHTML='';
+  for(let j=0;j<nv;j++){
+    const f=document.createElement('div'); f.className='field';
+    f.innerHTML='<label>'+L('คอลัมน์ข้อมูลตัวเลข (','Numeric data column (')+(isPair()?L('คู่ที่ '+(Math.floor(j/2)+1)+' ตัวแปรที่ '+(j%2+1),'pair '+(Math.floor(j/2)+1)+' var '+(j%2+1)):L('ตัวแปรตามที่ '+(j+1),'dependent variable '+(j+1)))+')</label>';
+    const s=document.createElement('select'); s.className='xv'; s.innerHTML=opts; s.value=Math.min((hasGroup()?1:0)+j,ncol-1); s.onchange=importSheet;
+    f.appendChild(s); box.appendChild(f);
+  }
+}
+function importSheet(){
+  const hdr=$('xlsHeader').checked,gc=+$('xlsG').value,vcs=[...document.querySelectorAll('.xv')].map(s=>+s.value);
+  const body=xlsRows.slice(hdr?1:0),empty=x=>x===''||x===null||x===undefined,pairs=[];
+  body.forEach(r=>{const g=hasGroup()?r[gc]:'',vs=vcs.map(c=>r[c]); if(empty(g)&&vs.every(empty))return; pairs.push([g,vs]);});
+  const gs=pairs.map(p=>p[0]).filter(g=>!empty(g));
+  const allNum=gs.every(g=>!isNaN(parseNum(g)));
+  let note='',mapG;
+  if(allNum){ mapG=g=>empty(g)?'':String(parseNum(g)); }
+  else{
+    const uniq=[...new Set(gs.map(g=>String(g).trim()))];
+    Object.keys(labels).forEach(k=>delete labels[k]);
+    uniq.forEach((u,i)=>{labels[i+1]=u;});
+    mapG=g=>empty(g)?'':String(uniq.indexOf(String(g).trim())+1);
+    note=' • คอลัมน์กลุ่มเป็นข้อความ จึงแปลงเป็นรหัส '+uniq.map((u,i)=>(i+1)+' = '+u).join(', ');
+  }
+  const rows=pairs.map(p=>[mapG(p[0]),p[1].map(v=>empty(v)?'':String(v))]);
+  if(hdr){const h=xlsRows[0]; if(hasGroup()&&!empty(h[gc]))$('groupName').value=String(h[gc]).trim(); vcs.forEach((c,j)=>{if(!empty(h[c]))dvNames[j]=String(h[c]).trim();}); buildHead(); renderDvNames();}
+  setRows(rows);
+  $('xlsInfo').textContent='✓ นำเข้าข้อมูล '+rows.length+' แถว ('+vcs.length+' ตัวแปรตาม) จากชีต "'+wb.SheetNames[+$('xlsSheet').value]+'"'+note;
+}
+$('xlsSheet').onchange=e=>loadSheet(+e.target.value);
+$('xlsHeader').onchange=()=>{buildColSelects();importSheet();};
+$('xlsG').onchange=importSheet;
+
+/* ---------- sample / reset ---------- */
+$('sampleBtn').onclick=()=>{
+  Object.keys(labels).forEach(k=>delete labels[k]); extras=[]; hideMsg();
+  const A=[78,82,85,80,76,88,79,84],B=[70,74,69,77,72,68,71,75],C=[60,66,63,70,65,62,64,61],D=[3,5,2,4,6,3,5,4],rows=[];
+  if(!hasGroup()){
+    for(let i=0;i<8;i++)rows.push(['',Array.from({length:nv},(_,j)=>isPair()?(j%2?A[i]+D[i]+Math.floor(j/2):A[i]+Math.floor(j/2)):A[i]+j*2-(i%3)*j)]);
+    for(let j=0;j<nv;j++)dvNames[j]=isPair()?(j%2?L('หลัง','After'):L('ก่อน','Before'))+(nv>2?Math.floor(j/2)+1:''):L('คะแนน','Score')+(nv>1?j+1:'');
+    if(tt==='one')$('mu').value=75;
+  }else{
+    const base=[A,B,C],codes=mode==='anova'?[1,2,3]:[1,2];
+    codes.forEach(c=>base[c-1].forEach((v,i)=>{rows.push([c,Array.from({length:nv},(_,j)=>Math.round(v*(1+0.08*j)+j*(c%2?2:-2)+(i%3)*j))]);}));
+    labels[1]=L('วิธีสอน A','Method A'); labels[2]=L('วิธีสอน B','Method B'); if(mode==='anova')labels[3]=L('วิธีสอน C','Method C');
+    $('groupName').value=L('วิธีสอน','Method');
+    for(let j=0;j<nv;j++)dvNames[j]=L('คะแนน','Score')+(j?(j+1):'');
+  }
+  buildHead(); renderDvNames(); setRows(rows);
+};
+$('resetBtn').onclick=()=>{
+  if(!confirm('ต้องการรีเซ็ตข้อมูลทั้งหมด (ตารางข้อมูล ป้ายกำกับ ชื่อตัวแปร ไฟล์ที่แนบ และผลลัพธ์) ใช่หรือไม่?'))return;
+  Object.keys(labels).forEach(k=>delete labels[k]); extras=[]; tG1=tG2=null;
+  $('groupName').value='group'; nv=1; dvNames.length=0; dvNames.push('score'); $('nv').value=1;
+  $('file').value=''; $('xlsPanel').hidden=true; wb=null; xlsRows=[];
+  document.querySelectorAll('.ph').forEach(c=>{c.checked=(c.value==='tukey');});
+  buildHead(); renderDvNames(); tbody.innerHTML=''; addRows(5); refreshGroups(true);
+  $('resultCard').hidden=true; $('outContent').innerHTML=''; hideMsg();
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+
+/* ---------- collect data (ทีละตัวแปรตาม) ---------- */
+function collectData(j){
+  const errors=[],warnings=[],map=new Map(); let used=0;
+  readRows().forEach(r=>{
+    const gs=r.g.trim(),vs=(r.vs[j]||'').trim(),anyV=r.vs.some(x=>x.trim()!=='');
+    if(gs===''&&vs==='')return;
+    if(gs===''||vs===''){
+      if(gs===''||anyV||j===0)warnings.push('แถว '+r.i+': กรอกข้อมูลไม่ครบ (ข้ามแถวนี้)');
+      return;
+    }
+    const g=parseNum(gs),v=parseNum(vs);
+    if(isNaN(g)){errors.push('แถว '+r.i+': ตัวแปรกลุ่ม "'+gs+'" ต้องเป็นตัวเลข');return;}
+    if(isNaN(v)){errors.push('แถว '+r.i+': ข้อมูล "'+vs+'" ต้องเป็นตัวเลข');return;}
+    if(!map.has(g))map.set(g,[]); map.get(g).push(v); used++;
+  });
+  const groups=[...map.entries()].sort((a,b)=>a[0]-b[0]).map(([code,vals])=>({code,label:(labels[code]||'').trim()||String(code),vals}));
+  return {groups,errors,warnings,used};
+}
+
+/* ---------- table helpers ---------- */
+const N_=(x)=>'<td class="n">'+x+'</td>';
+function head(alpha,nm,total,title){
+  const d=new Date(),loc=lang==='th'?'th-TH':'en-GB';
+  return '<div class="otitle">'+title+'</div><div class="onote">'+L('ตัวแปรตาม: ','Dependent variable: ')+esc(nm.d)+(nm.g?' | '+L('ตัวแปรกลุ่ม: ','Group variable: ')+esc(nm.g):'')+' | '+L('จำนวนข้อมูลที่ใช้: ','N used: ')+total+' | α = '+aStr(alpha)+' | '+L('วันที่: ','Date: ')+d.toLocaleDateString(loc)+' '+d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'})+'</div>';
+}
+
+/* ---------- t-test ---------- */
+function renderTTest(a,b,alpha,nm,total){
+  const S=Stat,da=S.desc(a.vals),db=S.desc(b.vals),n1=da.n,n2=db.n,diff=da.mean-db.mean,conf=Math.round((1-alpha)*100);
+  const dfE=n1+n2-2,sp2=(da.ss+db.ss)/dfE,seE=Math.sqrt(sp2*(1/n1+1/n2)),tE=diff/seE,pE=S.ptTwo(Math.abs(tE),dfE),tcE=S.tcrit(alpha,dfE);
+  const va=da.var/n1,vb=db.var/n2,seU=Math.sqrt(va+vb),tU=diff/seU,dfU=Math.pow(va+vb,2)/(va*va/(n1-1)+vb*vb/(n2-1)),pU=S.ptTwo(Math.abs(tU),dfU),tcU=S.tcrit(alpha,dfU);
+  const lev=S.levene([a.vals,b.vals],'mean');
+  const gv=esc(nm.g),dv=esc(nm.d);
+  let h=head(alpha,nm,total,'T-Test');
+
+  h+='<div class="tt">Group Statistics</div><table class="spss"><thead><tr><th></th><th>'+gv+'</th><th>N</th><th>Mean</th><th>Std. Deviation</th><th>Std. Error Mean</th></tr></thead><tbody>';
+  [[a,da],[b,db]].forEach(([g,d],i)=>{h+='<tr>'+(i===0?'<th class="rowh" rowspan="2">'+dv+'</th>':'')+'<td class="lbl">'+esc(g.label)+'</td>'+N_(d.n)+N_(fx(d.mean))+N_(fx(d.sd))+N_(fx(d.se))+'</tr>';});
+  h+='</tbody></table>';
+
+  h+='<div class="tt">Independent Samples Test</div><table class="spss"><thead>'+
+    '<tr><th colspan="2" rowspan="3"></th><th colspan="2">Levene\'s Test for Equality of Variances</th><th colspan="8">t-test for Equality of Means</th></tr>'+
+    '<tr><th rowspan="2">F</th><th rowspan="2">Sig.</th><th rowspan="2">t</th><th rowspan="2">df</th><th colspan="2">Significance</th><th rowspan="2">Mean Difference</th><th rowspan="2">Std. Error Difference</th><th colspan="2">'+conf+'% Confidence Interval of the Difference</th></tr>'+
+    '<tr><th>One-Sided p</th><th>Two-Sided p</th><th>Lower</th><th>Upper</th></tr></thead><tbody>'+
+    '<tr><th class="rowh" rowspan="2">'+dv+'</th><td class="lbl">Equal variances assumed</td><td class="n" rowspan="2">'+fx(lev.F)+'</td><td class="n" rowspan="2">'+fsig(lev.p)+'</td>'+N_(fx(tE))+N_(fdf(dfE))+N_(fsig(pE/2))+N_(fsig(pE))+N_(fx(diff))+N_(fx(seE))+N_(fx(diff-tcE*seE))+N_(fx(diff+tcE*seE))+'</tr>'+
+    '<tr><td class="lbl">Equal variances not assumed</td>'+N_(fx(tU))+N_(fdf(dfU))+N_(fsig(pU/2))+N_(fsig(pU))+N_(fx(diff))+N_(fx(seU))+N_(fx(diff-tcU*seU))+N_(fx(diff+tcU*seU))+'</tr></tbody></table>';
+
+  const d_=diff/Math.sqrt(sp2),J=1-3/(4*dfE-1),g_=d_*J,z=S.qnorm(alpha);
+  const seD=Math.sqrt((n1+n2)/(n1*n2)+d_*d_/(2*(n1+n2))),glass=diff/db.sd,seGl=Math.sqrt((n1+n2)/(n1*n2)+glass*glass/(2*(n2-1)));
+  const es=(lbl,st,pt,se)=>'<tr><td class="lbl">'+lbl+'</td>'+N_(fx(st))+N_(fx(pt))+N_(fx(pt-z*se))+N_(fx(pt+z*se))+'</tr>';
+  h+='<div class="tt">Independent Samples Effect Sizes</div><table class="spss"><thead><tr><th colspan="2" rowspan="2"></th><th rowspan="2">Standardizer<sup>a</sup></th><th rowspan="2">Point Estimate</th><th colspan="2">'+conf+'% Confidence Interval<sup>b</sup></th></tr><tr><th>Lower</th><th>Upper</th></tr></thead><tbody>';
+  h+='<tr><th class="rowh" rowspan="3">'+dv+'</th><td class="lbl">Cohen\'s d</td>'+N_(fx(Math.sqrt(sp2)))+N_(fx(d_))+N_(fx(d_-z*seD))+N_(fx(d_+z*seD))+'</tr>'+
+     '<tr><td class="lbl">Hedges\' correction</td>'+N_(fx(Math.sqrt(sp2)/J))+N_(fx(g_))+N_(fx(g_-z*seD*J))+N_(fx(g_+z*seD*J))+'</tr>'+
+     '<tr><td class="lbl">Glass\'s delta</td>'+N_(fx(db.sd))+N_(fx(glass))+N_(fx(glass-z*seGl))+N_(fx(glass+z*seGl))+'</tr></tbody></table>';
+  h+='<div class="fn">a. The denominator used in estimating the effect sizes. Cohen\'s d uses the pooled standard deviation. Hedges\' correction uses the pooled standard deviation, plus a correction factor. Glass\'s delta uses the sample standard deviation of the second group.<br>b. ช่วงเชื่อมั่นของ effect size คำนวณโดยประมาณจากการแจกแจงปกติ (อาจแตกต่างเล็กน้อยจาก SPSS ซึ่งใช้ noncentral t)</div>';
+
+  const eq=!isFinite(lev.p)||lev.p>=alpha, r=eq?{t:tE,df:dfE,p:pE}:{t:tU,df:dfU,p:pU}, sig=r.p<alpha, A=aStr(alpha);
+  h+='<div class="summary"><b class="h">'+L('สรุปผลการวิเคราะห์','Summary of results')+'</b>'+
+    '<p>1) '+L("การทดสอบความเท่ากันของความแปรปรวน (Levene's Test): F = "+fx(lev.F)+', Sig. = '+fsig(lev.p)+' '+(eq?'(≥ '+A+') แสดงว่าความแปรปรวนของสองกลุ่มไม่แตกต่างกัน จึงใช้ผลในแถว <b>Equal variances assumed</b>':'(< '+A+') แสดงว่าความแปรปรวนของสองกลุ่มแตกต่างกัน จึงใช้ผลในแถว <b>Equal variances not assumed</b>'),
+      "Levene's test: F = "+fx(lev.F)+', Sig. = '+fsig(lev.p)+' '+(eq?'(≥ '+A+'): variances are equal, so the <b>Equal variances assumed</b> row is used':'(< '+A+'): variances differ, so the <b>Equal variances not assumed</b> row is used'))+'</p>'+
+    '<p>2) '+L('กลุ่ม "'+esc(a.label)+'" (M = '+fx(da.mean)+', SD = '+fx(da.sd)+', n = '+n1+') และกลุ่ม "'+esc(b.label)+'" (M = '+fx(db.mean)+', SD = '+fx(db.sd)+', n = '+n2+') <b>'+(sig?'มีค่าเฉลี่ยแตกต่างกันอย่างมีนัยสำคัญทางสถิติ':'มีค่าเฉลี่ยไม่แตกต่างกันอย่างมีนัยสำคัญทางสถิติ')+'</b> ที่ระดับ '+A,
+      'Group "'+esc(a.label)+'" (M = '+fx(da.mean)+', SD = '+fx(da.sd)+', n = '+n1+') and group "'+esc(b.label)+'" (M = '+fx(db.mean)+', SD = '+fx(db.sd)+', n = '+n2+') <b>'+(sig?'differ significantly':'do not differ significantly')+'</b> at the '+A+' level')+' (t('+fdf(r.df)+') = '+fx(r.t)+', '+pTxt(r.p)+', Cohen\'s d = '+fx(d_)+')</p></div>';
+  return h;
+}
+
+/* ---------- ANOVA ---------- */
+const PH_NAME={tukey:'Tukey HSD',bonf:'Bonferroni',scheffe:'Scheffe',lsd:'LSD',gh:'Games-Howell'};
+function renderAnova(groups,alpha,nm,phList){
+  const S=Stat,k=groups.length,ds=groups.map(g=>S.desc(g.vals)),all=[]; groups.forEach(g=>g.vals.forEach(v=>all.push(v)));
+  const dt=S.desc(all),N=all.length,aov=S.oneway(groups.map(g=>g.vals)),conf=Math.round((1-alpha)*100);
+  const lm=S.levene(groups.map(g=>g.vals),'mean'),lmd=S.levene(groups.map(g=>g.vals),'median');
+  const wl=S.welch(ds),bf=S.brownForsythe(ds);
+  const gv=esc(nm.g),dv=esc(nm.d);
+  let h=head(alpha,nm,N,'Oneway');
+
+  // Descriptives
+  h+='<div class="tt">Descriptives</div><table class="spss"><thead><tr><th rowspan="2">'+dv+'</th><th rowspan="2">N</th><th rowspan="2">Mean</th><th rowspan="2">Std. Deviation</th><th rowspan="2">Std. Error</th><th colspan="2">'+conf+'% Confidence Interval for Mean</th><th rowspan="2">Minimum</th><th rowspan="2">Maximum</th></tr><tr><th>Lower Bound</th><th>Upper Bound</th></tr></thead><tbody>';
+  const drow=(lbl,d,isTotal)=>{const tc=S.tcrit(alpha,d.n-1);return '<tr><td class="lbl">'+(isTotal?'<b>Total</b>':esc(lbl))+'</td>'+N_(d.n)+N_(fx(d.mean))+N_(fx(d.sd))+N_(fx(d.se))+N_(fx(d.mean-tc*d.se))+N_(fx(d.mean+tc*d.se))+N_(fx(d.min))+N_(fx(d.max))+'</tr>';};
+  groups.forEach((g,i)=>{h+=drow(g.label,ds[i],false);}); h+=drow('',dt,true)+'</tbody></table>';
+
+  // Levene
+  h+='<div class="tt">Test of Homogeneity of Variances</div><table class="spss"><thead><tr><th colspan="2"></th><th>Levene Statistic</th><th>df1</th><th>df2</th><th>Sig.</th></tr></thead><tbody>'+
+    '<tr><th class="rowh" rowspan="2">'+dv+'</th><td class="lbl">Based on Mean</td>'+N_(fx(lm.F))+N_(lm.df1)+N_(lm.df2)+N_(fsig(lm.p))+'</tr>'+
+    '<tr><td class="lbl">Based on Median</td>'+N_(fx(lmd.F))+N_(lmd.df1)+N_(lmd.df2)+N_(fsig(lmd.p))+'</tr></tbody></table>';
+
+  // ANOVA
+  h+='<div class="tt">ANOVA</div><table class="spss"><thead><tr><th>'+dv+'</th><th>Sum of Squares</th><th>df</th><th>Mean Square</th><th>F</th><th>Sig.</th></tr></thead><tbody>'+
+    '<tr><td class="lbl">Between Groups</td>'+N_(fx(aov.ssb))+N_(aov.df1)+N_(fx(aov.msb))+N_(fx(aov.F))+N_(fsig(aov.p))+'</tr>'+
+    '<tr><td class="lbl">Within Groups</td>'+N_(fx(aov.ssw))+N_(aov.df2)+N_(fx(aov.msw))+'<td></td><td></td></tr>'+
+    '<tr><td class="lbl">Total</td>'+N_(fx(aov.sst))+N_(N-1)+'<td></td><td></td><td></td></tr></tbody></table>';
+
+  // Effect sizes
+  const eta=aov.ssb/aov.sst,eps=(aov.ssb-aov.df1*aov.msw)/aov.sst,omg=(aov.ssb-aov.df1*aov.msw)/(aov.sst+aov.msw);
+  h+='<div class="tt">ANOVA Effect Sizes</div><table class="spss"><thead><tr><th colspan="2"></th><th>Point Estimate</th></tr></thead><tbody>'+
+    '<tr><th class="rowh" rowspan="3">'+dv+'</th><td class="lbl">Eta-squared (η²)</td>'+N_(fx(eta))+'</tr><tr><td class="lbl">Epsilon-squared (ε²)</td>'+N_(fx(eps))+'</tr><tr><td class="lbl">Omega-squared Fixed-effect (ω²)</td>'+N_(fx(omg))+'</tr></tbody></table>';
+
+  // Robust
+  h+='<div class="tt">Robust Tests of Equality of Means</div><table class="spss"><thead><tr><th colspan="2"></th><th>Statistic<sup>a</sup></th><th>df1</th><th>df2</th><th>Sig.</th></tr></thead><tbody>'+
+    '<tr><th class="rowh" rowspan="2">'+dv+'</th><td class="lbl">Welch</td>'+N_(fx(wl.F))+N_(wl.df1)+N_(fdf(wl.df2))+N_(fsig(wl.p))+'</tr>'+
+    '<tr><td class="lbl">Brown-Forsythe</td>'+N_(fx(bf.F))+N_(bf.df1)+N_(fdf(bf.df2))+N_(fsig(bf.p))+'</tr></tbody></table><div class="fn">a. Asymptotically F distributed.</div>';
+
+  // Post hoc
+  const phResults={};
+  if(phList.length){
+    h+='<div class="tt">Post Hoc Tests</div><div class="tt" style="margin-top:6px;font-size:13px">Multiple Comparisons</div>';
+    phList.forEach(mth=>{
+      const res=S.posthoc(mth,ds,aov.msw,aov.df2,alpha); phResults[mth]=res;
+      let rows='',first=true;
+      for(let i=0;i<k;i++){
+        let firstI=true;
+        for(let j=0;j<k;j++){ if(i===j)continue; const r=res[i][j];
+          rows+='<tr>'+(first?'<th class="rowh" rowspan="'+(k*(k-1))+'">'+PH_NAME[mth]+'</th>':'')+(firstI?'<td class="lbl" rowspan="'+(k-1)+'">'+esc(groups[i].label)+'</td>':'')+'<td class="lbl">'+esc(groups[j].label)+'</td>'+N_(fx(r.diff)+(r.p<alpha?'*':''))+N_(fx(r.se))+N_(fsig(r.p))+N_(fx(r.lo))+N_(fx(r.hi))+'</tr>';
+          first=false;firstI=false;
+        }
+      }
+      h+='<table class="spss" style="margin-bottom:14px"><thead><tr><th colspan="3" rowspan="2" style="text-align:left">Dependent Variable: '+dv+'</th><th rowspan="2">Mean Difference (I-J)</th><th rowspan="2">Std. Error</th><th rowspan="2">Sig.</th><th colspan="2">'+conf+'% Confidence Interval</th></tr><tr><th>Lower Bound</th><th>Upper Bound</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    });
+    h+='<div class="fn">*. The mean difference is significant at the '+aStr(alpha)+' level. &nbsp;(I) / (J) = '+gv+'</div>';
+  }
+
+  const sig=aov.p<alpha,levOK=!isFinite(lm.p)||lm.p>=alpha,A=aStr(alpha);
+  h+='<div class="summary"><b class="h">'+L('สรุปผลการวิเคราะห์','Summary of results')+'</b>'+
+    '<p>1) '+L("Levene's Test (Based on Mean): F("+lm.df1+', '+lm.df2+') = '+fx(lm.F)+', Sig. = '+fsig(lm.p)+' '+(levOK?'→ ความแปรปรวนระหว่างกลุ่มไม่แตกต่างกัน ใช้ผล ANOVA และ Post-hoc แบบ Tukey/Bonferroni/Scheffé/LSD ได้':'→ ความแปรปรวนระหว่างกลุ่มแตกต่างกัน ควรพิจารณาผล Welch / Brown-Forsythe และ Post-hoc แบบ <b>Games-Howell</b>'),
+      "Levene's test (Based on Mean): F("+lm.df1+', '+lm.df2+') = '+fx(lm.F)+', Sig. = '+fsig(lm.p)+' '+(levOK?'→ variances are equal; ANOVA and Tukey/Bonferroni/Scheffé/LSD are appropriate':'→ variances differ; use Welch / Brown-Forsythe and <b>Games-Howell</b> post-hoc'))+'</p>'+
+    '<p>2) One-way ANOVA: F('+aov.df1+', '+aov.df2+') = '+fx(aov.F)+', '+pTxt(aov.p)+', η² = '+fx(eta)+' → <b>'+(sig?L('ค่าเฉลี่ยของกลุ่มต่าง ๆ แตกต่างกันอย่างน้อย 1 คู่ อย่างมีนัยสำคัญทางสถิติ','at least one pair of group means differs significantly'):L('ค่าเฉลี่ยของกลุ่มต่าง ๆ ไม่แตกต่างกันอย่างมีนัยสำคัญทางสถิติ','group means do not differ significantly'))+'</b> '+L('ที่ระดับ ','at the ')+A+(lang==='en'?' level':'')+'</p>';
+  if(sig&&phList.length){
+    phList.forEach(mth=>{
+      const res=phResults[mth],pairs=[];
+      for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){const r=res[i][j]; if(r.p<alpha)pairs.push('"'+esc(groups[i].label)+'" '+L('กับ','vs')+' "'+esc(groups[j].label)+'" ('+L('ผลต่างค่าเฉลี่ย = ','mean diff = ')+fx(r.diff)+', '+pTxt(r.p)+')');}
+      h+='<p>3) Post-hoc ('+PH_NAME[mth]+'): '+(pairs.length?L('กลุ่มที่แตกต่างกันอย่างมีนัยสำคัญ ได้แก่ ','significantly different pairs: ')+pairs.join('; '):L('ไม่พบคู่ใดที่แตกต่างกันอย่างมีนัยสำคัญ','no pair differs significantly'))+'</p>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ---------- run (วิเคราะห์ทีละตัวแปรตาม) ---------- */
+function analyzeOne(groups,used,alpha,nm,pre,notes){
+  if(mode==='ttest'){
+    let a,b;
+    if(groups.length<2)return {err:'t-test ต้องมีข้อมูลอย่างน้อย 2 กลุ่ม (พบ '+groups.length+' กลุ่ม) — ตรวจสอบตัวแปรกลุ่ม'};
+    if(groups.length===2){a=groups[0];b=groups[1];}
+    else{
+      a=groups.find(g=>g.code===tG1); b=groups.find(g=>g.code===tG2);
+      if(!a||!b||a===b)return {err:'กรุณาเลือก 2 กลุ่มที่แตกต่างกันสำหรับ t-test (และต้องมีข้อมูลในกลุ่มที่เลือก)'};
+      notes.push(pre+'พบ '+groups.length+' กลุ่ม — t-test ใช้เฉพาะกลุ่ม "'+a.label+'" และ "'+b.label+'" (หากต้องการเปรียบเทียบทุกกลุ่มให้เลือก One-way ANOVA)');
+    }
+    if(a.vals.length+b.vals.length<3)return {err:'ต้องมีข้อมูลรวมอย่างน้อย 3 ค่า จึงจะคำนวณ t-test ได้'};
+    if(a.vals.length<2||b.vals.length<2)notes.push(pre+'มีกลุ่มที่มีข้อมูลเพียง 1 ค่า จึงไม่สามารถคำนวณส่วนเบี่ยงเบนมาตรฐานและค่า Equal variances not assumed ได้');
+    const gs=[a,b]; addGC(gs,nm,alpha,true); return {html:ins(renderTTest(a,b,alpha,nm,a.vals.length+b.vals.length),detail(gs,alpha,nm),normTxt(gs,alpha))};
+  }
+  if(groups.length<2)return {err:'One-way ANOVA ต้องมีข้อมูลอย่างน้อย 2 กลุ่ม (พบ '+groups.length+' กลุ่ม) — ตรวจสอบตัวแปรกลุ่ม'};
+  if(used<=groups.length)return {err:'จำนวนข้อมูลต้องมากกว่าจำนวนกลุ่ม (ต้องมีบางกลุ่มที่มีข้อมูลมากกว่า 1 ค่า)'};
+  if(groups.some(g=>g.vals.length<2))notes.push(pre+'มีกลุ่มที่มีข้อมูลเพียง 1 ค่า ซึ่งอาจทำให้ค่าบางส่วน (เช่น Games-Howell, Welch) คำนวณไม่ได้');
+  const ph=[...document.querySelectorAll('.ph:checked')].map(c=>c.value);
+  addGC(groups,nm,alpha); return {html:ins(renderAnova(groups,alpha,nm,ph),detail(groups,alpha,nm),normTxt(groups,alpha))};
+}
+/* ---------- extra stats ---------- */
+function qn(p){return Stat.solve(z=>Stat.pnorm(z)-p,-40,40,1e-14);}
+function swilk(x){
+  const n=x.length; if(n<3||n>2000)return null; const y=x.slice().sort((a,b)=>a-b);
+  if(y[n-1]-y[0]<1e-12)return null;
+  const m=[];for(let i=1;i<=n;i++)m.push(qn((i-.375)/(n+.25)));
+  const mm=m.reduce((s,v)=>s+v*v,0),u=1/Math.sqrt(n),sm=Math.sqrt(mm),P=(c,t)=>c.reduce((s,v,i)=>s+v*Math.pow(t,i),0),a=new Array(n).fill(0);
+  if(n===3){a[2]=Math.SQRT1_2;a[0]=-a[2];}
+  else{
+    const an=P([0,.221157,-.147981,-2.07119,4.434685,-2.706056],u)+m[n-1]/sm;
+    if(n>5){const an1=P([0,.042981,-.293762,-1.752461,5.682633,-3.582633],u)+m[n-2]/sm,phi=(mm-2*m[n-1]**2-2*m[n-2]**2)/(1-2*an**2-2*an1**2);
+      for(let i=2;i<n-2;i++)a[i]=m[i]/Math.sqrt(phi); a[n-1]=an;a[n-2]=an1;a[0]=-an;a[1]=-an1;}
+    else{const phi=(mm-2*m[n-1]**2)/(1-2*an**2); for(let i=1;i<n-1;i++)a[i]=m[i]/Math.sqrt(phi); a[n-1]=an;a[0]=-an;}
+  }
+  const mean=y.reduce((s,v)=>s+v,0)/n; let num=0,den=0; for(let i=0;i<n;i++){num+=a[i]*y[i];den+=(y[i]-mean)**2;}
+  const W=Math.min(1,num*num/den); let p;
+  if(n===3)p=Math.max(0,6/Math.PI*(Math.asin(Math.sqrt(W))-Math.asin(Math.sqrt(.75))));
+  else{const l=Math.log(1-W);
+    if(n<=11){const g=-2.273+.459*n; if(l>=g)p=0; else{const w=-Math.log(g-l),mu=.544-.39978*n+.025054*n*n-.0006714*n**3,sg=Math.exp(1.3822-.77857*n+.062767*n*n-.0020322*n**3);p=1-Stat.pnorm((w-mu)/sg);}}
+    else{const t=Math.log(n),mu=-1.5861-.31082*t-.083751*t*t+.0038915*t**3,sg=Math.exp(-.4803-.082676*t+.0030302*t*t);p=1-Stat.pnorm((l-mu)/sg);}
+  }
+  return {W,p,n};
+}
+function lillie(x){
+  const n=x.length;if(n<4)return null;const y=x.slice().sort((a,b)=>a-b),d=Stat.desc(y);if(!(d.sd>0))return null;
+  let D=0;for(let i=0;i<n;i++){const F=Stat.pnorm((y[i]-d.mean)/d.sd);D=Math.max(D,(i+1)/n-F,F-i/n);}
+  let Dk=D,nn=n;if(n>100){Dk=D*Math.pow(n/100,.49);nn=100;}
+  let p=Math.exp(-7.01256*Dk*Dk*(nn+2.78019)+2.99587*Dk*Math.sqrt(nn+2.78019)-.122119+.974598/Math.sqrt(nn)+1.67997/nn);
+  if(p>.1){const K=(Math.sqrt(n)-.01+.85/Math.sqrt(n))*D;
+    p=K<=.302?1:K<=.5?2.76773-19.828315*K+80.709644*K**2-138.55152*K**3+81.218052*K**4:K<=.9?-4.901232+40.662806*K-97.490286*K**2+94.029866*K**3-32.355711*K**4:K<=1.31?6.198765-19.558097*K+23.186922*K**2-12.234627*K**3+2.423045*K**4:0;}
+  return {D,p:Math.min(1,Math.max(0,p)),n};
+}
+function moments(v,d){
+  const n=v.length;let s3=0,s4=0;v.forEach(x=>{const z=(x-d.mean)/d.sd;s3+=z**3;s4+=z**4;});
+  const ses=n>2?Math.sqrt(6*n*(n-1)/((n-2)*(n+1)*(n+3))):NaN;
+  return {sk:n>2?n/((n-1)*(n-2))*s3:NaN,ses,ku:n>3?n*(n+1)/((n-1)*(n-2)*(n-3))*s4-3*(n-1)**2/((n-2)*(n-3)):NaN,sek:n>3?2*ses*Math.sqrt((n*n-1)/((n-3)*(n+5))):NaN};
+}
+function detail(items,alpha,nm){
+  const conf=Math.round((1-alpha)*100),hd=['N','Mean','Median','Variance','Std. Deviation','Std. Error',conf+'% CI Lower',conf+'% CI Upper','Minimum','Maximum','Range','Skewness','Std. Error of Skewness','Kurtosis','Std. Error of Kurtosis'];
+  const cols=items.map(it=>{const d=Stat.desc(it.vals),tc=Stat.tcrit(alpha,d.n-1),m=moments(it.vals,d);return [d.n,fx(d.mean),fx(Stat.median(it.vals)),fx(d.var),fx(d.sd),fx(d.se),fx(d.mean-tc*d.se),fx(d.mean+tc*d.se),fx(d.min),fx(d.max),fx(d.max-d.min),fx(m.sk),fx(m.ses),fx(m.ku),fx(m.sek)];});
+  let h='<div class="tt">Detailed Descriptive Statistics</div><table class="spss"><thead><tr><th></th>'+items.map(it=>'<th>'+esc(it.label)+'</th>').join('')+'</tr></thead><tbody>';
+  hd.forEach((r,i)=>{h+='<tr><td class="lbl">'+r+'</td>'+cols.map(c=>N_(c[i])).join('')+'</tr>';});
+  h+='</tbody></table><div class="tt">Tests of Normality</div><table class="spss"><thead><tr><th rowspan="2"></th><th colspan="3">Kolmogorov-Smirnov<sup>a</sup></th><th colspan="3">Shapiro-Wilk</th></tr><tr><th>Statistic</th><th>df</th><th>Sig.</th><th>Statistic</th><th>df</th><th>Sig.</th></tr></thead><tbody>';
+  items.forEach(it=>{const w=swilk(it.vals),k=lillie(it.vals);h+='<tr><td class="lbl">'+esc(it.label)+'</td>'+N_(k?fx(k.D):'.')+N_(it.vals.length)+N_(k?fsig(k.p):'.')+N_(w?fx(w.W):'.')+N_(it.vals.length)+N_(w?fsig(w.p):'.')+'</tr>';});
+  return h+'</tbody></table><div class="fn">a. Lilliefors Significance Correction ('+L('ประมาณค่า p แบบ Dallal-Wilkinson/Stephens; ไม่คำนวณเมื่อ n < 4','Dallal-Wilkinson/Stephens approximation of p; not computed when n < 4')+')<br>'+L('Shapiro-Wilk คำนวณด้วยวิธีประมาณของ Royston (3 ≤ n ≤ 2000); ไม่คำนวณเมื่อ n < 3 หรือข้อมูลทุกค่าเท่ากัน','Shapiro-Wilk uses Royston\'s approximation (3 ≤ n ≤ 2000); not computed when n < 3 or all values are identical')+'</div>';
+}
+function normTxt(items,alpha){
+  return L('ผลการตรวจสอบการแจกแจงปกติ (Shapiro-Wilk): ','Normality check (Shapiro-Wilk): ')+items.map(it=>{const s=swilk(it.vals);return esc(it.label)+' → '+(s?'W = '+fx(s.W)+', '+pTxt(s.p)+(s.p>=alpha?L(' (ไม่ขัดแย้งกับการแจกแจงปกติ)',' (consistent with normality)'):L(' (ไม่เป็นการแจกแจงปกติ ควรพิจารณาสถิติแบบไม่อิงพารามิเตอร์)',' (departs from normality; consider nonparametric tests)')):L('ข้อมูลน้อยเกินไป','too few data'));}).join('; ');
+}
+const ins=(h,ex,np)=>{const i=h.indexOf('<div class="summary">');h=h.slice(0,i)+ex+h.slice(i);return h.replace(/<\/div>$/,'<p>'+np+'</p></div>');};
+
+/* ---------- One-sample / Paired renderers ---------- */
+function esTable(title,dv,rows,z,conf){
+  return '<div class="tt">'+title+'</div><table class="spss"><thead><tr><th colspan="2" rowspan="2"></th><th rowspan="2">Standardizer<sup>a</sup></th><th rowspan="2">Point Estimate</th><th colspan="2">'+conf+'% Confidence Interval<sup>b</sup></th></tr><tr><th>Lower</th><th>Upper</th></tr></thead><tbody>'+
+    rows.map((r,i)=>'<tr>'+(i?'':'<th class="rowh" rowspan="'+rows.length+'">'+dv+'</th>')+'<td class="lbl">'+r[0]+'</td>'+N_(fx(r[1]))+N_(fx(r[2]))+N_(fx(r[2]-z*r[3]))+N_(fx(r[2]+z*r[3]))+'</tr>').join('')+
+    '</tbody></table><div class="fn">a. '+L('ตัวหาร (standardizer) ที่ใช้คำนวณ effect size','The denominator used in estimating the effect sizes')+'<br>b. '+L('ช่วงเชื่อมั่นคำนวณโดยประมาณจากการแจกแจงปกติ (อาจต่างเล็กน้อยจาก SPSS ที่ใช้ noncentral t)','CI approximated from the normal distribution (may differ slightly from SPSS, which uses noncentral t)')+'</div>';
+}
+function renderOne(x,mu,alpha,nm){
+  const S=Stat,d=S.desc(x),n=d.n,df=n-1,diff=d.mean-mu,t=diff/d.se,p=S.ptTwo(Math.abs(t),df),tc=S.tcrit(alpha,df),conf=Math.round((1-alpha)*100),dv=esc(nm.d),
+    dd=diff/d.sd,J=1-3/(4*df-1),z=S.qnorm(alpha),se=Math.sqrt(1/n+dd*dd/(2*n)),A=aStr(alpha),sig=p<alpha;
+  let h=head(alpha,nm,n,'T-Test');
+  h+='<div class="tt">One-Sample Statistics</div><table class="spss"><thead><tr><th></th><th>N</th><th>Mean</th><th>Std. Deviation</th><th>Std. Error Mean</th></tr></thead><tbody><tr><td class="lbl">'+dv+'</td>'+N_(n)+N_(fx(d.mean))+N_(fx(d.sd))+N_(fx(d.se))+'</tr></tbody></table>';
+  h+='<div class="tt">One-Sample Test</div><table class="spss"><thead><tr><th rowspan="3"></th><th colspan="7">Test Value = '+mu+'</th></tr><tr><th rowspan="2">t</th><th rowspan="2">df</th><th colspan="2">Significance</th><th rowspan="2">Mean Difference</th><th colspan="2">'+conf+'% Confidence Interval of the Difference</th></tr><tr><th>One-Sided p</th><th>Two-Sided p</th><th>Lower</th><th>Upper</th></tr></thead><tbody><tr><td class="lbl">'+dv+'</td>'+N_(fx(t))+N_(fdf(df))+N_(fsig(p/2))+N_(fsig(p))+N_(fx(diff))+N_(fx(diff-tc*d.se))+N_(fx(diff+tc*d.se))+'</tr></tbody></table>';
+  h+=esTable('One-Sample Effect Sizes',dv,[["Cohen's d",d.sd,dd,se],["Hedges' correction",d.sd/J,dd*J,se*J]],z,conf);
+  const it=[{label:nm.d,vals:x}]; h+=detail(it,alpha,nm);
+  h+='<div class="summary"><b class="h">'+L('สรุปผลการวิเคราะห์','Summary of results')+'</b><p>1) '+
+    L('ค่าเฉลี่ยของ "'+dv+'" (M = '+fx(d.mean)+', SD = '+fx(d.sd)+', n = '+n+') <b>'+(sig?'แตกต่าง':'ไม่แตกต่าง')+'</b>จากค่าทดสอบ μ₀ = '+mu+' อย่างมีนัยสำคัญทางสถิติที่ระดับ '+A,
+      'The mean of "'+dv+'" (M = '+fx(d.mean)+', SD = '+fx(d.sd)+', n = '+n+') <b>'+(sig?'differs':'does not differ')+'</b> significantly from the test value μ₀ = '+mu+' at the '+A+' level')+
+    ' (t('+df+') = '+fx(t)+', '+pTxt(p)+', '+L('ผลต่าง = ','mean diff = ')+fx(diff)+', '+conf+'% CI ['+fx(diff-tc*d.se)+', '+fx(diff+tc*d.se)+"], Cohen's d = "+fx(dd)+')</p><p>2) '+normTxt(it,alpha)+'</p></div>';
+  return h;
+}
+function renderPaired(a,b,alpha,nm,names){
+  const S=Stat,n=a.length,df=n-1,df_=a.map((v,i)=>v-b[i]),da=S.desc(a),db=S.desc(b),dd=S.desc(df_),conf=Math.round((1-alpha)*100),
+    t=dd.mean/dd.se,p=S.ptTwo(Math.abs(t),df),tc=S.tcrit(alpha,df),r=a.reduce((s,v,i)=>s+(v-da.mean)*(b[i]-db.mean),0)/((n-1)*da.sd*db.sd),
+    rt=r*Math.sqrt((n-2)/(1-r*r)),rp=Math.abs(r)>=1?0:S.ptTwo(Math.abs(rt),n-2),d_=dd.mean/dd.sd,J=1-3/(4*df-1),z=S.qnorm(alpha),se=Math.sqrt(1/n+d_*d_/(2*n)),A=aStr(alpha),sig=p<alpha,
+    n1=esc(names[0]),n2=esc(names[1]),pr=n1+' - '+n2;
+  let h=head(alpha,nm,n,'T-Test');
+  h+='<div class="tt">Paired Samples Statistics</div><table class="spss"><thead><tr><th colspan="2"></th><th>Mean</th><th>N</th><th>Std. Deviation</th><th>Std. Error Mean</th></tr></thead><tbody>'+
+    [[n1,da],[n2,db]].map(([l,d],i)=>'<tr>'+(i?'':'<th class="rowh" rowspan="2">Pair 1</th>')+'<td class="lbl">'+l+'</td>'+N_(fx(d.mean))+N_(d.n)+N_(fx(d.sd))+N_(fx(d.se))+'</tr>').join('')+'</tbody></table>';
+  h+='<div class="tt">Paired Samples Correlations</div><table class="spss"><thead><tr><th colspan="2"></th><th>N</th><th>Correlation</th><th>One-Sided p</th><th>Two-Sided p</th></tr></thead><tbody><tr><th class="rowh">Pair 1</th><td class="lbl">'+pr+'</td>'+N_(n)+N_(fx(r))+N_(fsig(rp/2))+N_(fsig(rp))+'</tr></tbody></table>';
+  h+='<div class="tt">Paired Samples Test</div><table class="spss"><thead><tr><th rowspan="3" colspan="2"></th><th colspan="5">Paired Differences</th><th rowspan="3">t</th><th rowspan="3">df</th><th colspan="2">Significance</th></tr><tr><th rowspan="2">Mean</th><th rowspan="2">Std. Deviation</th><th rowspan="2">Std. Error Mean</th><th colspan="2">'+conf+'% Confidence Interval of the Difference</th><th rowspan="2">One-Sided p</th><th rowspan="2">Two-Sided p</th></tr><tr><th>Lower</th><th>Upper</th></tr></thead><tbody><tr><th class="rowh">Pair 1</th><td class="lbl">'+pr+'</td>'+N_(fx(dd.mean))+N_(fx(dd.sd))+N_(fx(dd.se))+N_(fx(dd.mean-tc*dd.se))+N_(fx(dd.mean+tc*dd.se))+N_(fx(t))+N_(df)+N_(fsig(p/2))+N_(fsig(p))+'</tr></tbody></table>';
+  h+=esTable('Paired Samples Effect Sizes',pr,[["Cohen's d",dd.sd,d_,se],["Hedges' correction",dd.sd/J,d_*J,se*J]],z,conf);
+  const it=[{label:names[0],vals:a},{label:names[1],vals:b},{label:L('ผลต่าง (','Difference (')+names[0]+' − '+names[1]+')',vals:df_}]; h+=detail(it,alpha,nm);
+  h+='<div class="summary"><b class="h">'+L('สรุปผลการวิเคราะห์','Summary of results')+'</b><p>1) '+
+    L('"'+n1+'" (M = '+fx(da.mean)+', SD = '+fx(da.sd)+') และ "'+n2+'" (M = '+fx(db.mean)+', SD = '+fx(db.sd)+') (n = '+n+' คู่) <b>'+(sig?'มีค่าเฉลี่ยแตกต่างกัน':'มีค่าเฉลี่ยไม่แตกต่างกัน')+'</b>อย่างมีนัยสำคัญทางสถิติที่ระดับ '+A,
+      '"'+n1+'" (M = '+fx(da.mean)+', SD = '+fx(da.sd)+') and "'+n2+'" (M = '+fx(db.mean)+', SD = '+fx(db.sd)+') (n = '+n+' pairs) <b>'+(sig?'differ significantly':'do not differ significantly')+'</b> at the '+A+' level')+
+    ' (t('+df+') = '+fx(t)+', '+pTxt(p)+', '+L('ผลต่างเฉลี่ย = ','mean difference = ')+fx(dd.mean)+', '+conf+'% CI ['+fx(dd.mean-tc*dd.se)+', '+fx(dd.mean+tc*dd.se)+"], Cohen's d = "+fx(d_)+')</p><p>2) '+
+    L('สหสัมพันธ์ระหว่างคู่ข้อมูล r = '+fx(r)+', '+pTxt(rp),'Correlation between the pairs: r = '+fx(r)+', '+pTxt(rp))+'</p><p>3) '+normTxt(it.slice(2),alpha)+L(' (สมมติฐานของ Paired t-test คือผลต่างมีการแจกแจงปกติ)',' (the paired t-test assumes normally distributed differences)')+'</p></div>';
+  return h;
+}
+
+/* ---------- charts (canvas) ---------- */
+const CH=[], COL=['#2557d6','#e8710a','#0f9d58','#9334e6','#d93025','#12a4af','#7b5e00'];
+function frame(cv,title,lo,hi,yl,xl,xr){
+  const W=cv.width=820,H=cv.height=460,c=cv.getContext('2d'),Lm=72,T=48,pw=W-Lm-30,ph=H-T-70;
+  c.fillStyle='#fff';c.fillRect(0,0,W,H);c.fillStyle='#000';c.textAlign='center';c.font='bold 17px Sarabun,Arial';c.fillText(title,W/2,28);
+  const Y=v=>T+ph-(v-lo)/(hi-lo)*ph, X=xr?(v=>Lm+(v-xr[0])/(xr[1]-xr[0])*pw):((i,n)=>Lm+pw*(i+.5)/n);
+  c.font='13px Sarabun,Arial';c.lineWidth=1;
+  for(let i=0;i<=5;i++){const v=lo+(hi-lo)*i/5,y=Y(v);c.strokeStyle='#e6e6e6';c.beginPath();c.moveTo(Lm,y);c.lineTo(Lm+pw,y);c.stroke();c.fillStyle='#000';c.textAlign='right';c.fillText(+v.toPrecision(3),Lm-8,y+4);}
+  if(xr){c.textAlign='center';for(let i=0;i<=5;i++){const v=xr[0]+(xr[1]-xr[0])*i/5;c.fillText(+v.toPrecision(3),X(v),T+ph+18);}}
+  c.strokeStyle='#000';c.strokeRect(Lm,T,pw,ph);c.textAlign='center';c.font='14px Sarabun,Arial';c.fillStyle='#000';
+  if(xl)c.fillText(xl,Lm+pw/2,H-12);
+  if(yl){c.save();c.translate(18,T+ph/2);c.rotate(-Math.PI/2);c.fillText(yl,0,0);c.restore();}
+  return {c,X,Y,Lm,T,pw,ph};
+}
+function cat(f,lb){const n=lb.length;f.c.fillStyle='#000';f.c.font='13px Sarabun,Arial';f.c.textAlign='center';lb.forEach((s,i)=>f.c.fillText(String(s).slice(0,18),f.X(i,n),f.T+f.ph+18));}
+function hl(f,v,t,col){const c=f.c;c.save();c.setLineDash([7,5]);c.strokeStyle=col;c.lineWidth=2;c.beginPath();c.moveTo(f.Lm,f.Y(v));c.lineTo(f.Lm+f.pw,f.Y(v));c.stroke();c.restore();c.fillStyle=col;c.textAlign='right';c.font='13px Sarabun,Arial';c.fillText(t,f.Lm+f.pw-6,f.Y(v)-6);}
+function vl(f,v,t,col,k){const c=f.c,x=f.X(v);c.save();c.setLineDash([7,5]);c.strokeStyle=col;c.lineWidth=2;c.beginPath();c.moveTo(x,f.T);c.lineTo(x,f.T+f.ph);c.stroke();c.restore();c.fillStyle=col;c.textAlign=x>f.Lm+f.pw*.7?'right':'left';c.font='13px Sarabun,Arial';c.fillText(t,x+(c.textAlign==='left'?6:-6),f.T+16+k*16);}
+function cBars(cv,title,lb,m,lo,hi,ref,yl,xl){
+  const mx=Math.max(...hi,ref==null?-1e300:ref),mn=Math.min(0,...lo),f=frame(cv,title,mn,mx+(mx-mn)*.12,yl,xl),n=lb.length,bw=Math.min(90,f.pw/n*.5),c=f.c;
+  m.forEach((v,i)=>{const x=f.X(i,n),l=isFinite(lo[i])?lo[i]:v,u=isFinite(hi[i])?hi[i]:v;c.fillStyle=COL[i%7]+'cc';c.fillRect(x-bw/2,Math.min(f.Y(v),f.Y(0)),bw,Math.abs(f.Y(0)-f.Y(v)));
+    c.strokeStyle='#000';c.lineWidth=1.5;c.beginPath();c.moveTo(x,f.Y(l));c.lineTo(x,f.Y(u));c.moveTo(x-8,f.Y(l));c.lineTo(x+8,f.Y(l));c.moveTo(x-8,f.Y(u));c.lineTo(x+8,f.Y(u));c.stroke();
+    c.fillStyle='#fff';c.font='bold 13px Sarabun,Arial';c.textAlign='center';c.fillText(fx(v),x,f.Y(0)+(v>=0?-8:16));});
+  cat(f,lb); if(ref!=null)hl(f,ref,L('ค่าทดสอบ = ','Test value = ')+ref,'#d93025');
+}
+function cBox(cv,title,lb,arrs,ref,yl,xl){
+  const st=arrs.map(a=>{const s=a.slice().sort((x,y)=>x-y),q=p=>{const k=(s.length-1)*p,i=Math.floor(k);return s[i]+(s[Math.min(i+1,s.length-1)]-s[i])*(k-i);},q1=q(.25),q3=q(.75),iq=q3-q1,lw=s.find(v=>v>=q1-1.5*iq),hw=[...s].reverse().find(v=>v<=q3+1.5*iq);return {q1,q3,md:q(.5),lw,hw,out:s.filter(v=>v<lw||v>hw),mean:Stat.desc(a).mean};});
+  const all=arrs.flat(),lo=Math.min(...all,ref==null?1e300:ref),hi=Math.max(...all,ref==null?-1e300:ref),p=(hi-lo||1)*.08,f=frame(cv,title,lo-p,hi+p,yl,xl),n=lb.length,bw=Math.min(90,f.pw/n*.5),c=f.c;
+  st.forEach((s,i)=>{const x=f.X(i,n);c.strokeStyle='#000';c.lineWidth=1.5;c.fillStyle=COL[i%7]+'55';c.fillRect(x-bw/2,f.Y(s.q3),bw,f.Y(s.q1)-f.Y(s.q3));c.strokeRect(x-bw/2,f.Y(s.q3),bw,f.Y(s.q1)-f.Y(s.q3));
+    c.beginPath();c.moveTo(x-bw/2,f.Y(s.md));c.lineTo(x+bw/2,f.Y(s.md));c.moveTo(x,f.Y(s.q3));c.lineTo(x,f.Y(s.hw));c.moveTo(x,f.Y(s.q1));c.lineTo(x,f.Y(s.lw));c.moveTo(x-10,f.Y(s.hw));c.lineTo(x+10,f.Y(s.hw));c.moveTo(x-10,f.Y(s.lw));c.lineTo(x+10,f.Y(s.lw));c.stroke();
+    s.out.forEach(v=>{c.beginPath();c.arc(x,f.Y(v),3.5,0,7);c.stroke();});
+    c.fillStyle='#d93025';c.beginPath();c.moveTo(x,f.Y(s.mean)-6);c.lineTo(x+6,f.Y(s.mean));c.lineTo(x,f.Y(s.mean)+6);c.lineTo(x-6,f.Y(s.mean));c.fill();});
+  cat(f,lb); if(ref!=null)hl(f,ref,L('ค่าทดสอบ = ','Test value = ')+ref,'#d93025');
+  c.fillStyle='#d93025';c.textAlign='left';c.font='12px Sarabun,Arial';c.fillText('◆ '+L('ค่าเฉลี่ย','Mean'),f.Lm+6,f.T+f.ph-8);
+}
+function cHist(cv,title,v,refs,xl){
+  const d=Stat.desc(v),n=v.length,k=Math.max(5,Math.ceil(Math.log2(n))+1),w=(d.max-d.min||1)/k,bins=Array(k).fill(0);
+  v.forEach(x=>bins[Math.min(k-1,Math.floor((x-d.min)/w))]++);
+  let x0=Math.min(d.min,...refs.map(r=>r.v)),x1=Math.max(d.max,...refs.map(r=>r.v));const pad=(x1-x0||1)*.1;x0-=pad;x1+=pad;
+  const pk=d.sd>0?n*w/(d.sd*Math.sqrt(2*Math.PI)):0,f=frame(cv,title,0,Math.max(...bins,pk)*1.25,L('ความถี่','Frequency'),xl,[x0,x1]),c=f.c;
+  bins.forEach((b,i)=>{const xa=f.X(d.min+i*w),xb=f.X(d.min+(i+1)*w);c.fillStyle='#2557d6aa';c.strokeStyle='#1b43ab';c.fillRect(xa,f.Y(b),xb-xa-1,f.Y(0)-f.Y(b));c.strokeRect(xa,f.Y(b),xb-xa-1,f.Y(0)-f.Y(b));});
+  if(d.sd>0){c.beginPath();for(let i=0;i<=100;i++){const x=x0+(x1-x0)*i/100,y=n*w*Math.exp(-((x-d.mean)**2)/(2*d.var))/(d.sd*Math.sqrt(2*Math.PI));i?c.lineTo(f.X(x),f.Y(y)):c.moveTo(f.X(x),f.Y(y));}c.strokeStyle='#e8710a';c.lineWidth=2;c.stroke();}
+  refs.forEach((r,i)=>vl(f,r.v,r.t,r.c,i));
+}
+function cQQ(cv,title,v,xl,yl){
+  const y=v.slice().sort((a,b)=>a-b),n=y.length,q=y.map((_,i)=>qn((i+.5)/n)),d=Stat.desc(y),
+    lo=Math.min(...y,d.mean-2.5*d.sd),hi=Math.max(...y,d.mean+2.5*d.sd),pad=(hi-lo||1)*.05,f=frame(cv,title,lo-pad,hi+pad,yl,xl,[-2.8,2.8]),c=f.c;
+  if(d.sd>0){c.strokeStyle='#d93025';c.lineWidth=2;c.beginPath();c.moveTo(f.X(-2.8),f.Y(d.mean-2.8*d.sd));c.lineTo(f.X(2.8),f.Y(d.mean+2.8*d.sd));c.stroke();}
+  c.fillStyle='#2557d6cc';q.forEach((z,i)=>{c.beginPath();c.arc(f.X(z),f.Y(y[i]),4,0,7);c.fill();});
+}
+function cPair(cv,title,a,b,nm){
+  const all=a.concat(b),lo=Math.min(...all),hi=Math.max(...all),p=(hi-lo||1)*.1,f=frame(cv,title,lo-p,hi+p,'',''),c=f.c,ma=Stat.desc(a).mean,mb=Stat.desc(b).mean;
+  a.forEach((v,i)=>{c.strokeStyle='rgba(80,80,80,.35)';c.lineWidth=1;c.beginPath();c.moveTo(f.X(0,2),f.Y(v));c.lineTo(f.X(1,2),f.Y(b[i]));c.stroke();
+    [[0,v],[1,b[i]]].forEach(([k,y])=>{c.fillStyle=COL[k]+'cc';c.beginPath();c.arc(f.X(k,2),f.Y(y),4,0,7);c.fill();});});
+  c.strokeStyle='#d93025';c.lineWidth=3.5;c.beginPath();c.moveTo(f.X(0,2),f.Y(ma));c.lineTo(f.X(1,2),f.Y(mb));c.stroke();
+  c.fillStyle='#d93025';c.textAlign='left';c.font='13px Sarabun,Arial';c.fillText('— '+L('ค่าเฉลี่ย','Mean'),f.Lm+6,f.T+16);cat(f,nm);
+}
+const confOf=a=>Math.round((1-a)*100);
+function addGC(gs,nm,alpha){
+  const ds=gs.map(g=>Stat.desc(g.vals)),tc=ds.map(d=>Stat.tcrit(alpha,d.n-1)),lb=gs.map(g=>g.label),cf=confOf(alpha);
+  CH.push({t:'MeanCI_'+nm.d,fn:cv=>cBars(cv,L('ค่าเฉลี่ยและช่วงเชื่อมั่น '+cf+'%: ','Mean and '+cf+'% CI: ')+nm.d,lb,ds.map(d=>d.mean),ds.map((d,i)=>d.mean-tc[i]*d.se),ds.map((d,i)=>d.mean+tc[i]*d.se),null,nm.d,nm.g)},
+    {t:'Boxplot_'+nm.d,fn:cv=>cBox(cv,'Boxplot: '+nm.d,lb,gs.map(g=>g.vals),null,nm.d,nm.g)},
+    ...gs.map(g=>({t:'QQ_'+nm.d+'_'+g.label,fn:cv=>cQQ(cv,'Normal Q-Q Plot: '+nm.d+' ('+g.label+')',g.vals,L('ควอนไทล์ทฤษฎี (ปกติ)','Theoretical normal quantiles'),L('ค่าที่สังเกตได้','Observed values'))})),
+    {t:'Histogram_'+nm.d,fn:cv=>cHist(cv,L('ฮิสโตแกรมรวมทุกกลุ่ม: ','Histogram (all groups): ')+nm.d,gs.flatMap(g=>g.vals),[],nm.d)});
+}
+function addOneCharts(x,mu,alpha,nm){
+  const d=Stat.desc(x),tc=Stat.tcrit(alpha,d.n-1),cf=confOf(alpha);
+  CH.push({t:'Histogram_'+nm.d,fn:cv=>cHist(cv,L('ฮิสโตแกรมของ ','Histogram of ')+nm.d,x,[{v:d.mean,t:L('ค่าเฉลี่ย = ','Mean = ')+fx(d.mean),c:'#0f9d58'},{v:mu,t:L('ค่าทดสอบ = ','Test value = ')+mu,c:'#d93025'}],nm.d)},
+    {t:'QQ_'+nm.d,fn:cv=>cQQ(cv,'Normal Q-Q Plot: '+nm.d,x,L('ควอนไทล์ทฤษฎี (ปกติ)','Theoretical normal quantiles'),L('ค่าที่สังเกตได้','Observed values'))},
+    {t:'Boxplot_'+nm.d,fn:cv=>cBox(cv,'Boxplot: '+nm.d,[nm.d],[x],mu,nm.d,'')},
+    {t:'MeanCI_'+nm.d,fn:cv=>cBars(cv,L('ค่าเฉลี่ยและช่วงเชื่อมั่น '+cf+'% เทียบกับค่าทดสอบ','Mean and '+cf+'% CI vs test value'),[nm.d],[d.mean],[d.mean-tc*d.se],[d.mean+tc*d.se],mu,nm.d,'')});
+}
+function addPairCharts(a,b,alpha,nm,names){
+  const da=Stat.desc(a),db=Stat.desc(b),df_=a.map((v,i)=>v-b[i]),dd=Stat.desc(df_),tc=Stat.tcrit(alpha,a.length-1),cf=confOf(alpha),tn=Stat.tcrit(alpha,da.n-1);
+  CH.push({t:'PairedPlot_'+nm.d,fn:cv=>cPair(cv,L('กราฟเส้นเชื่อมข้อมูลรายคู่: ','Paired observations: ')+names.join(' → '),a,b,names)},
+    {t:'MeanCI_'+nm.d,fn:cv=>cBars(cv,L('ค่าเฉลี่ยและช่วงเชื่อมั่น '+cf+'%','Means and '+cf+'% CI'),names,[da.mean,db.mean],[da.mean-tn*da.se,db.mean-tn*db.se],[da.mean+tn*da.se,db.mean+tn*db.se],null,'',''),},
+    {t:'Boxplot_'+nm.d,fn:cv=>cBox(cv,'Boxplot: '+names.join(' / '),names,[a,b],null,'','')},
+    {t:'QQ_diff_'+nm.d,fn:cv=>cQQ(cv,'Normal Q-Q Plot: '+L('ผลต่าง','Difference')+' ('+names[0]+' − '+names[1]+')',df_,L('ควอนไทล์ทฤษฎี (ปกติ)','Theoretical normal quantiles'),L('ผลต่างที่สังเกตได้','Observed differences'))},
+    {t:'DiffHistogram_'+nm.d,fn:cv=>cHist(cv,L('ฮิสโตแกรมของผลต่าง (','Histogram of differences (')+names[0]+' − '+names[1]+')',df_,[{v:0,t:L('ผลต่าง = 0','Zero difference'),c:'#d93025'},{v:dd.mean,t:L('ผลต่างเฉลี่ย = ','Mean diff = ')+fx(dd.mean),c:'#0f9d58'}],L('ผลต่าง','Difference'))});
+}
+function showGraphs(){
+  const box=$('graphBox');box.innerHTML='';
+  CH.forEach(ch=>{const d=document.createElement('div');d.className='gcard';d.innerHTML='<div class="gh"><b></b><button type="button" class="btn green">⬇ '+L('ดาวน์โหลด PNG','Download PNG')+'</button></div><canvas></canvas>';
+    const cv=d.querySelector('canvas');d.querySelector('b').textContent=ch.t.replace('_',': ');ch.fn(cv);
+    d.querySelector('button').onclick=()=>cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=ch.t.replace(/[^\w\u0E00-\u0E7F-]+/g,'_')+'_'+stamp()+'.png';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},'image/png');
+    box.appendChild(d);});
+  if(!CH.length)box.textContent=L('ไม่มีกราฟ','No graphs');
+}
+let pane=null;
+function showPane(p){pane=p;$('paneTable').hidden=p!=='table';$('paneGraph').hidden=p!=='graph';$('tabTable').classList.toggle('on',p==='table');$('tabGraph').classList.toggle('on',p==='graph');if(p==='graph')showGraphs();}
+$('tabTable').onclick=()=>showPane('table');$('tabGraph').onclick=()=>showPane('graph');
+
+/* ---------- explanations under tables ---------- */
+const EXPL={
+'Group Statistics':['แสดงจำนวนตัวอย่าง (N) ค่าเฉลี่ย ส่วนเบี่ยงเบนมาตรฐาน (SD) และความคลาดเคลื่อนมาตรฐานของค่าเฉลี่ย (SE) ของแต่ละกลุ่ม ใช้ดูภาพรวมและทิศทางความแตกต่างของค่าเฉลี่ย','Shows the sample size (N), mean, standard deviation (SD) and standard error of the mean (SE) of each group — an overview of the direction of the difference.'],
+'Independent Samples Test':['ดู Levene\'s Test ก่อน: ถ้า Sig. ≥ {a} ใช้แถว Equal variances assumed ถ้า < {a} ใช้แถว Equal variances not assumed จากนั้นดู Two-Sided p: ถ้า < {a} แสดงว่าค่าเฉลี่ยสองกลุ่มแตกต่างกันอย่างมีนัยสำคัญ ช่วงเชื่อมั่นของผลต่างที่ไม่คร่อมศูนย์สอดคล้องกับผลนัยสำคัญ','Check Levene\'s test first: if Sig. ≥ {a} use "Equal variances assumed", otherwise "Equal variances not assumed". Then Two-Sided p < {a} means the two group means differ significantly; a CI of the difference that excludes 0 agrees with this.'],
+'Independent Samples Effect Sizes':['ขนาดอิทธิพล (Cohen\'s d): ประมาณ 0.2 = เล็ก, 0.5 = ปานกลาง, 0.8 = ใหญ่ Hedges\' correction ปรับอคติเมื่อกลุ่มตัวอย่างเล็ก','Effect size (Cohen\'s d): about 0.2 = small, 0.5 = medium, 0.8 = large. Hedges\' correction adjusts for small-sample bias.'],
+'One-Sample Statistics':['แสดง N ค่าเฉลี่ย SD และ SE ของตัวแปรที่ทดสอบ','Shows N, mean, SD and SE of the tested variable.'],
+'One-Sample Test':['เปรียบเทียบค่าเฉลี่ยกับค่าทดสอบ (Test Value) Mean Difference = ค่าเฉลี่ย − ค่าทดสอบ ถ้า Two-Sided p < {a} แสดงว่าค่าเฉลี่ยแตกต่างจากค่าทดสอบอย่างมีนัยสำคัญ และถ้าช่วงเชื่อมั่นไม่คร่อมศูนย์ก็ให้ข้อสรุปเดียวกัน','Compares the sample mean with the test value. Mean Difference = mean − test value. Two-Sided p < {a} means the mean differs significantly from the test value; a CI not containing 0 gives the same conclusion.'],
+'One-Sample Effect Sizes':['Cohen\'s d = ผลต่างค่าเฉลี่ย ÷ SD ของกลุ่มตัวอย่าง (0.2 เล็ก, 0.5 ปานกลาง, 0.8 ใหญ่)','Cohen\'s d = mean difference ÷ sample SD (0.2 small, 0.5 medium, 0.8 large).'],
+'Paired Samples Statistics':['สถิติของแต่ละตัวแปรในคู่ (ค่าเฉลี่ย N SD SE) ใช้ดูทิศทางว่าตัวแปรใดมีค่าเฉลี่ยสูงกว่า','Statistics of each variable in the pair (mean, N, SD, SE) — shows which variable has the higher mean.'],
+'Paired Samples Correlations':['สหสัมพันธ์ (Pearson r) ระหว่างสองตัวแปรที่จับคู่ ถ้า r สูงและมีนัยสำคัญ แสดงว่าการจับคู่เหมาะสม และ Paired t-test มีอำนาจการทดสอบสูงกว่า Independent t-test','Pearson correlation between the paired variables. A high, significant r indicates the pairing is effective and gives the paired t-test more power than an independent t-test.'],
+'Paired Samples Test':['ทดสอบว่าผลต่างเฉลี่ยของแต่ละคู่ (Mean = ตัวแปรที่ 1 − ตัวแปรที่ 2) เท่ากับ 0 หรือไม่ ถ้า Two-Sided p < {a} แสดงว่าสองเงื่อนไขมีค่าเฉลี่ยแตกต่างกันอย่างมีนัยสำคัญ ค่าลบหมายถึงตัวแปรที่ 2 สูงกว่า','Tests whether the mean paired difference (variable 1 − variable 2) equals 0. Two-Sided p < {a} means the two conditions differ significantly; a negative mean means variable 2 is higher.'],
+'Paired Samples Effect Sizes':['Cohen\'s d (d_z) = ผลต่างเฉลี่ย ÷ SD ของผลต่าง (0.2 เล็ก, 0.5 ปานกลาง, 0.8 ใหญ่)','Cohen\'s d (d_z) = mean difference ÷ SD of the differences (0.2 small, 0.5 medium, 0.8 large).'],
+'Detailed Descriptive Statistics':['สถิติเชิงพรรณนาละเอียด: ความเบ้ (Skewness) และความโด่ง (Kurtosis) ใกล้ 0 หมายถึงการแจกแจงใกล้เคียงปกติ (ค่าสัมบูรณ์เกิน 2 เท่าของ SE ถือว่าเบี่ยงเบนชัดเจน)','Detailed descriptives: skewness and kurtosis near 0 suggest a near-normal distribution (an absolute value above about 2 × its SE indicates a clear departure).'],
+'Tests of Normality':['ใช้ Kolmogorov-Smirnov (Lilliefors) และ Shapiro-Wilk (แนะนำเมื่อ n น้อย) ทดสอบ H₀: ข้อมูลมีการแจกแจงปกติ ถ้า Sig. ≥ {a} ไม่ปฏิเสธ H₀ (ข้อมูลสอดคล้องกับการแจกแจงปกติ) ถ้า < {a} ข้อมูลไม่เป็นปกติ ควรพิจารณาสถิติแบบไม่อิงพารามิเตอร์ หรือดูขนาดตัวอย่าง','Kolmogorov-Smirnov (Lilliefors) and Shapiro-Wilk (preferred for small n) test H₀: the data are normally distributed. Sig. ≥ {a}: do not reject H₀ (consistent with normality); < {a}: not normal — consider nonparametric tests and the sample size.'],
+'Descriptives':['สถิติเชิงพรรณนาของแต่ละกลุ่มและรวมทุกกลุ่ม พร้อมช่วงเชื่อมั่นของค่าเฉลี่ย ค่าต่ำสุดและสูงสุด','Descriptive statistics of each group and in total, with the CI of the mean, minimum and maximum.'],
+'Test of Homogeneity of Variances':['ทดสอบ H₀: ความแปรปรวนของทุกกลุ่มเท่ากัน ถ้า Sig. ≥ {a} ผ่านข้อตกลงเบื้องต้นของ ANOVA ถ้า < {a} ให้ดูผล Welch/Brown-Forsythe และ Games-Howell','Tests H₀: all group variances are equal. Sig. ≥ {a}: the ANOVA assumption holds; < {a}: use Welch/Brown-Forsythe and Games-Howell.'],
+'ANOVA':['ถ้า Sig. ของ F < {a} แสดงว่ามีอย่างน้อย 1 คู่ของกลุ่มที่ค่าเฉลี่ยแตกต่างกัน แล้วดู Post Hoc เพื่อระบุว่าคู่ใดต่างกัน','If the Sig. of F < {a}, at least one pair of group means differs; then use the post-hoc tests to find which pairs.'],
+'ANOVA Effect Sizes':['η² (Eta-squared) คือสัดส่วนความแปรปรวนของตัวแปรตามที่อธิบายได้ด้วยกลุ่ม (ประมาณ .01 เล็ก, .06 ปานกลาง, .14 ใหญ่) ω² และ ε² เป็นค่าที่ปรับอคติแล้ว','η² is the proportion of variance explained by group (about .01 small, .06 medium, .14 large). ω² and ε² are bias-adjusted versions.'],
+'Robust Tests of Equality of Means':['ทางเลือกเมื่อความแปรปรวนไม่เท่ากัน ถ้า Sig. < {a} แสดงว่าค่าเฉลี่ยแตกต่างกันอย่างมีนัยสำคัญ','An alternative when variances are unequal. Sig. < {a} means the means differ significantly.'],
+'Multiple Comparisons':['เปรียบเทียบค่าเฉลี่ยทีละคู่ เครื่องหมาย * และ Sig. < {a} แสดงว่าคู่นั้นแตกต่างกันอย่างมีนัยสำคัญ (ช่วงเชื่อมั่นไม่คร่อมศูนย์)','Pairwise comparisons of means. A * and Sig. < {a} mark significantly different pairs (CI excludes 0).']};
+function decorate(root){
+  const a=aStr(+$('alpha').value);
+  root.querySelectorAll('.tt').forEach(t=>{const e=EXPL[t.textContent.trim()];if(!e)return;let last=t,n=t.nextElementSibling;
+    while(n&&!/\b(tt|summary|dvsep|part)\b/.test(n.className)){last=n;n=n.nextElementSibling;}
+    last.insertAdjacentHTML('afterend','<div class="fn expl"><b>'+L('คำอธิบาย: ','Explanation: ')+'</b>'+L(e[0],e[1]).replace(/\{a\}/g,a)+'</div>');});
+}
+const EN2TH={'T-Test':'การทดสอบ t-test','Oneway':'การวิเคราะห์ความแปรปรวนทางเดียว (One-way ANOVA)','Group Statistics':'สถิติของกลุ่ม','Independent Samples Test':'ผลการทดสอบ Independent Samples t-test','Independent Samples Effect Sizes':'ขนาดอิทธิพล (Effect Sizes)','One-Sample Statistics':'สถิติของกลุ่มตัวอย่าง','One-Sample Test':'ผลการทดสอบ One-Sample t-test','One-Sample Effect Sizes':'ขนาดอิทธิพล (Effect Sizes)','Paired Samples Statistics':'สถิติของตัวอย่างที่จับคู่','Paired Samples Correlations':'สหสัมพันธ์ของตัวอย่างที่จับคู่','Paired Samples Test':'ผลการทดสอบ Paired Samples t-test','Paired Samples Effect Sizes':'ขนาดอิทธิพล (Effect Sizes)','Detailed Descriptive Statistics':'สถิติเชิงพรรณนาแบบละเอียด','Tests of Normality':'การทดสอบการแจกแจงปกติ','Descriptives':'สถิติเชิงพรรณนา','Test of Homogeneity of Variances':'การทดสอบความเท่ากันของความแปรปรวน','ANOVA':'ตารางวิเคราะห์ความแปรปรวน (ANOVA)','ANOVA Effect Sizes':'ขนาดอิทธิพล (Effect Sizes)','Robust Tests of Equality of Means':'การทดสอบความเท่ากันของค่าเฉลี่ยแบบ Robust','Post Hoc Tests':'การเปรียบเทียบพหุคูณภายหลัง (Post Hoc)','Multiple Comparisons':'การเปรียบเทียบรายคู่',
+'Mean':'ค่าเฉลี่ย','Median':'มัธยฐาน','Variance':'ความแปรปรวน','Std. Deviation':'ส่วนเบี่ยงเบนมาตรฐาน','Std. Error Mean':'ความคลาดเคลื่อนมาตรฐานของค่าเฉลี่ย','Std. Error':'ความคลาดเคลื่อนมาตรฐาน','Minimum':'ค่าต่ำสุด','Maximum':'ค่าสูงสุด','Range':'พิสัย','Lower Bound':'ขอบล่าง','Upper Bound':'ขอบบน','Lower':'ขอบล่าง','Upper':'ขอบบน','Skewness':'ความเบ้','Std. Error of Skewness':'ความคลาดเคลื่อนมาตรฐานของความเบ้','Kurtosis':'ความโด่ง','Std. Error of Kurtosis':'ความคลาดเคลื่อนมาตรฐานของความโด่ง',"Levene's Test for Equality of Variances":"Levene's Test (ความเท่ากันของความแปรปรวน)",'t-test for Equality of Means':'t-test เปรียบเทียบค่าเฉลี่ย','Significance':'นัยสำคัญ','One-Sided p':'p (ทางเดียว)','Two-Sided p':'p (สองทาง)','Mean Difference':'ผลต่างค่าเฉลี่ย','Std. Error Difference':'ความคลาดเคลื่อนมาตรฐานของผลต่าง','Equal variances assumed':'ความแปรปรวนเท่ากัน','Equal variances not assumed':'ความแปรปรวนไม่เท่ากัน','Standardizer':'ตัวหารมาตรฐาน','Point Estimate':'ค่าประมาณ',"Hedges' correction":"Hedges' g (ปรับอคติ)",'Levene Statistic':'สถิติ Levene','Based on Mean':'อิงค่าเฉลี่ย','Based on Median':'อิงมัธยฐาน','Sum of Squares':'ผลรวมกำลังสอง','Mean Square':'ค่าเฉลี่ยกำลังสอง','Between Groups':'ระหว่างกลุ่ม','Within Groups':'ภายในกลุ่ม','Total':'รวม','Statistic':'สถิติ','Mean Difference (I-J)':'ผลต่างค่าเฉลี่ย (I-J)','Correlation':'สหสัมพันธ์ (r)','Paired Differences':'ผลต่างของคู่','Pair 1':'คู่ที่ 1','Sig.':'Sig. (p)'};
+function trOut(root){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),ns=[];while(w.nextNode())ns.push(w.currentNode);
+  ns.forEach(n=>{const t=n.nodeValue,k=t.trim();if(!k||n.parentElement.closest('.expl,.summary'))return;let r=EN2TH[k];
+    if(r===undefined)r=k.replace(/^Dependent Variable: /,'ตัวแปรตาม: ').replace(/^Test Value = /,'ค่าทดสอบ = ').replace(/^(\d+)% Confidence Interval of the Difference$/,'ช่วงเชื่อมั่น $1% ของผลต่าง').replace(/^(\d+)% Confidence Interval for Mean$/,'ช่วงเชื่อมั่น $1% ของค่าเฉลี่ย').replace(/^(\d+)% Confidence Interval$/,'ช่วงเชื่อมั่น $1%').replace(/^(\d+)% CI (Lower|Upper)$/,(m,a,b)=>(b==='Lower'?'ขอบล่าง':'ขอบบน')+'ช่วงเชื่อมั่น '+a+'%');
+    if(r!==k)n.nodeValue=t.replace(k,r);});
+}
+
+/* ---------- language (UI) ---------- */
+const TH2EN={'โปรแกรมวิเคราะห์ t-test และ One-way ANOVA':'t-test and One-way ANOVA Analysis Program','📊 โปรแกรมวิเคราะห์ t-test และ One-way ANOVA':'📊 t-test and One-way ANOVA Analysis Program',
+'กรอกข้อมูล / วางจาก Excel / แนบไฟล์ Excel → กดประมวลผล → ได้ตารางสถิติแบบละเอียด คำอธิบาย และกราฟ พร้อมดาวน์โหลดเป็น Excel / PNG / Word':'Enter data / paste from Excel / attach an Excel file → Process → get detailed statistical tables, explanations and graphs, downloadable as Excel / PNG / Word',
+'เลือกวิธีการวิเคราะห์':'Choose the analysis method','เปรียบเทียบค่าเฉลี่ย (เลือกชนิดของ t-test ด้านล่าง)':'Compare means (choose the t-test type below)','เปรียบเทียบค่าเฉลี่ยตั้งแต่ 2 กลุ่มขึ้นไป (มี Post-hoc)':'Compare means of 2 or more groups (with post-hoc tests)',
+'เปรียบเทียบค่าเฉลี่ยกับค่าที่กำหนด':'Compare the mean with a specified value','เปรียบเทียบ 2 กลุ่มที่เป็นอิสระต่อกัน':'Compare 2 independent groups','เปรียบเทียบ 2 ค่าที่จับคู่กัน (เช่น ก่อน-หลัง)':'Compare 2 paired measurements (e.g. before-after)',
+'ระดับนัยสำคัญ (α)':'Significance level (α)','.05 (ช่วงเชื่อมั่น 95%)':'.05 (95% confidence)','.01 (ช่วงเชื่อมั่น 99%)':'.01 (99% confidence)','.10 (ช่วงเชื่อมั่น 90%)':'.10 (90% confidence)','จำนวนทศนิยมในตาราง':'Decimal places in tables','2 ตำแหน่ง':'2 places','3 ตำแหน่ง':'3 places','4 ตำแหน่ง':'4 places','ค่าทดสอบ (Test Value, μ₀)':'Test value (μ₀)',
+'Post-hoc (Multiple Comparisons) — กดเลือกวิธีที่ต้องการแสดง (เลือกได้หลายวิธี / ไม่เลือก = ไม่แสดง)':'Post-hoc (multiple comparisons) — select the methods to show (multiple allowed / none = hide)','Tukey / Bonferroni / Scheffé / LSD ใช้เมื่อความแปรปรวนเท่ากัน • Games-Howell ใช้เมื่อความแปรปรวนไม่เท่ากัน':'Tukey / Bonferroni / Scheffé / LSD assume equal variances • Games-Howell is for unequal variances',
+'ตั้งชื่อตัวแปรและป้ายกำกับกลุ่ม (Value Labels)':'Name the variables and group labels (Value Labels)','ชื่อตัวแปรกลุ่ม (ตัวเลขรหัสกลุ่ม)':'Group variable name (numeric group code)','ชื่อตัวแปรตาม (ข้อมูลตัวเลข) — ตารางข้อมูลจะมีคอลัมน์เพิ่มตามจำนวนตัวแปร และระบบจะวิเคราะห์ให้ทีละตัวแปร':'Variable names (numeric data) — the data table gets one column per variable and each is analysed in turn',
+'ป้ายกำกับของรหัสกลุ่ม (เช่น 1 = ชาย, 2 = หญิง) — ช่องจะเพิ่มตามรหัสกลุ่มที่พบในข้อมูลโดยอัตโนมัติ หรือกดปุ่มด้านล่างเพื่อเพิ่ม label เองได้ไม่จำกัด':'Group code labels (e.g. 1 = Male, 2 = Female) — boxes appear automatically for the codes found in the data, or add more labels with the button below',
+'＋ เพิ่ม label':'＋ Add label','พบมากกว่า 2 กลุ่ม — เลือก 2 กลุ่มที่ต้องการเปรียบเทียบด้วย t-test':'More than 2 groups found — choose the 2 groups to compare with the t-test','กลุ่มที่ 1':'Group 1','กลุ่มที่ 2':'Group 2',
+'ใส่ข้อมูล':'Enter data','แนบไฟล์ Excel (.xlsx, .xls, .csv)':'Attach an Excel file (.xlsx, .xls, .csv)','คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่ (หรือจะพิมพ์ / วางข้อมูลจาก Excel ลงตารางด้านล่างก็ได้)':'Click to choose a file or drag it here (or type / paste data from Excel into the table below)',
+'ชีต':'Sheet','คอลัมน์ ตัวแปรกลุ่ม (รหัสกลุ่ม)':'Group variable column (group code)','แถวแรกเป็นชื่อหัวตาราง':'First row is the header','ตารางข้อมูล (':'Data table (','แถว) — กด Enter เพื่อไปแถวถัดไป / วางข้อมูลจาก Excel ได้โดยตรง':'rows) — press Enter for the next row / paste directly from Excel',
+'＋ เพิ่มแถว':'＋ Add row','＋ เพิ่ม 10 แถว':'＋ Add 10 rows','🧪 ใส่ข้อมูลตัวอย่าง':'🧪 Load sample data','▶ ประมวลผล':'▶ Process','↺ Reset ข้อมูล':'↺ Reset data','ผลการวิเคราะห์':'Analysis results','📋 นำเสนอเป็นตาราง':'📋 Show tables','📈 นำเสนอกราฟ':'📈 Show graphs','📊 ดาวน์โหลดตารางเป็น Excel':'📊 Download tables as Excel','🖼 บันทึกเป็นรูปภาพ (PNG)':'🖼 Save as image (PNG)','📄 บันทึกเป็นไฟล์ Word':'📄 Save as Word file','คำนวณด้วย JavaScript ในเครื่องของคุณ — ข้อมูลไม่ถูกส่งออกไปที่ใด':'Computed with JavaScript on your device — your data is never uploaded'};
+function applyLang(){
+  document.documentElement.lang=lang; document.title=L('โปรแกรมวิเคราะห์ t-test และ One-way ANOVA','t-test and One-way ANOVA Analysis Program');
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('script,style,[data-skip],#outContent,#graphBox')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}),ns=[];
+  while(w.nextNode())ns.push(w.currentNode);
+  ns.forEach(n=>{const o=n.__o===undefined?(n.__o=n.nodeValue):n.__o,k=o.trim();n.nodeValue=(lang==='en'&&TH2EN[k])?o.replace(k,TH2EN[k]):o;});
+  const g=$('groupName');if(g.__p===undefined)g.__p=g.placeholder;g.placeholder=lang==='en'?'e.g. group, gender':g.__p;
+  $('langTh').classList.toggle('on',lang==='th');$('langEn').classList.toggle('on',lang==='en');
+}
+function setLang(l){
+  lang=l;applyLang();updateModeUI();renderLabels(shownCodes());
+  if(wb&&!$('xlsPanel').hidden)buildColSelects();
+  if(!$('resultCard').hidden)runAll();
+}
+$('langTh').onclick=()=>setLang('th');$('langEn').onclick=()=>setLang('en');
+
+/* ---------- run ---------- */
+function collectCols(cols){
+  const errors=[],warnings=[],rows=[];
+  readRows().forEach(r=>{const raw=cols.map(c=>(r.vs[c]||'').trim());if(raw.every(x=>x===''))return;
+    if(raw.some(x=>x==='')){warnings.push(L('แถว '+r.i+': กรอกข้อมูลไม่ครบ (ข้ามแถวนี้)','Row '+r.i+': incomplete data (row skipped)'));return;}
+    const v=raw.map(parseNum),bad=v.findIndex(isNaN);if(bad>=0){errors.push(L('แถว '+r.i+': ข้อมูล "'+raw[bad]+'" ต้องเป็นตัวเลข','Row '+r.i+': "'+raw[bad]+'" must be numeric'));return;}
+    rows.push(v);});
+  return {rows,errors,warnings};
+}
+function runSimple(j,alpha,nm,pre,notes,names){
+  const c=collectCols(isPair()?[2*j,2*j+1]:[j]);
+  c.warnings.slice(0,6).forEach(w=>notes.push(pre+w));
+  if(c.errors.length)return {err:c.errors[0]};
+  if(c.rows.length<2)return {err:L('ต้องมีข้อมูลอย่างน้อย 2 ค่า (หรือ 2 คู่) — ตรวจสอบตารางข้อมูล','At least 2 values (or 2 pairs) are required — check the data table')};
+  try{
+    if(!isPair()){const mu=parseNum($('mu').value);if(isNaN(mu))return {err:L('ค่าทดสอบ (Test Value) ต้องเป็นตัวเลข','Test value must be numeric')};const x=c.rows.map(r=>r[0]);addOneCharts(x,mu,alpha,nm);return {html:renderOne(x,mu,alpha,nm)};}
+    const a=c.rows.map(r=>r[0]),b=c.rows.map(r=>r[1]);addPairCharts(a,b,alpha,nm,names);return {html:renderPaired(a,b,alpha,nm,names)};
+  }catch(e){return {err:L('เกิดข้อผิดพลาดในการคำนวณ: ','Calculation error: ')+e.message};}
+}
+function runAll(){
+  hideMsg();CH.length=0;
+  const alpha=+$('alpha').value;DEC=+$('dec').value;
+  const gname=$('groupName').value.trim()||'group',errs=[],notes=[],parts=[],G=hasGroup(),units=isPair()?nv/2:nv;
+  for(let j=0;j<units;j++){
+    const names=isPair()?[dvName(2*j),dvName(2*j+1)]:[dvName(j)],nm={g:G?gname:null,d:names.join(' – ')},pre=units>1?'['+nm.d+'] ':'';
+    let r;
+    if(G){
+      const c=collectData(j); c.warnings.slice(0,6).forEach(w=>notes.push(pre+w));
+      if(c.errors.length){c.errors.slice(0,6).forEach(x=>errs.push(pre+x));continue;}
+      if(!c.used){errs.push(pre+L('ยังไม่มีข้อมูล กรุณากรอกตารางหรือแนบไฟล์ Excel','No data yet — fill in the table or attach an Excel file'));continue;}
+      try{r=analyzeOne(c.groups,c.used,alpha,nm,pre,notes);}catch(e){r={err:L('เกิดข้อผิดพลาดในการคำนวณ: ','Calculation error: ')+e.message};}
+    }else r=runSimple(j,alpha,nm,pre,notes,names);
+    if(r.err){errs.push(pre+r.err);continue;}
+    parts.push('<div class="part" data-i="'+(j+1)+'">'+(units>1?'<div class="dvhead">'+L('ตัวแปรที่ '+(j+1)+' จาก '+units+': ','Variable '+(j+1)+' of '+units+': ')+esc(nm.d)+'</div>':'')+r.html+'</div>');
+  }
+  if(errs.length)showMsg('error',errs.slice(0,14));
+  if(!parts.length){return;}
+  const o=$('outContent');o.innerHTML=parts.join('<div class="dvsep"></div>');decorate(o);if(lang==='th')trOut(o);
+  $('resultCard').hidden=false; addMsg('warn',notes.slice(0,10));
+  if(pane)showPane(pane); else $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('runBtn').onclick=runAll;
+$('saveXlsx').onclick=()=>{
+  if(typeof XLSX==='undefined'){alert(L('โหลดไลบรารี Excel ไม่สำเร็จ (ต้องเชื่อมต่ออินเทอร์เน็ต)','Could not load the Excel library (internet connection required)'));return;}
+  const w=XLSX.utils.book_new(),used=new Set(),o=$('outContent'),sm=[[L('คำอธิบายและสรุปผล','Explanations and summary')]];
+  o.querySelectorAll('.expl,.summary p').forEach(e=>sm.push([e.textContent]));
+  XLSX.utils.book_append_sheet(w,XLSX.utils.aoa_to_sheet(sm),L('สรุป','Summary')); used.add(L('สรุป','Summary'));
+  o.querySelectorAll('table.spss').forEach((t,i)=>{let p=t.previousElementSibling;while(p&&!p.classList.contains('tt'))p=p.previousElementSibling;
+    const pt=t.closest('.part'),nm=(((pt&&o.querySelectorAll('.part').length>1)?'V'+pt.dataset.i+' ':'')+(p?p.textContent:'Table'+i)).replace(/[\\\/?*\[\]:]/g,'').trim();
+    let u=nm.slice(0,28),k=2;while(used.has(u))u=nm.slice(0,25)+'_'+k++;used.add(u);XLSX.utils.book_append_sheet(w,XLSX.utils.table_to_sheet(t),u);});
+  XLSX.writeFile(w,'stats_tables_'+stamp()+'.xlsx');
+};
+
+/* ---------- save PNG ---------- */
+const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());};
+$('savePng').onclick=async()=>{
+  if(typeof html2canvas==='undefined'){alert('โหลดไลบรารีสร้างรูปภาพไม่สำเร็จ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return;}
+  const el=$('outContent'),btn=$('savePng'),old=btn.textContent; btn.disabled=true; btn.textContent='กำลังสร้างรูปภาพ…';
+  try{
+    const cv=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,width:el.scrollWidth,height:el.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,el.scrollWidth+60),
+      onclone:doc=>{const s=doc.getElementById('outScroll');if(s)s.style.overflow='visible';}});
+    cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='spss_result_'+stamp()+'.png';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},'image/png');
+  }catch(err){alert('บันทึกรูปภาพไม่สำเร็จ: '+err.message);}
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ---------- save Word ---------- */
+$('saveWord').onclick=()=>{
+  const clone=$('outContent').cloneNode(true);
+  clone.querySelectorAll('table').forEach(t=>{t.setAttribute('border','1');t.setAttribute('cellspacing','0');t.setAttribute('cellpadding','4');});
+  const css=$('outCss').textContent;
+  const doc='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>ผลการวิเคราะห์</title>'+
+    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'+
+    '<style>@page{size:A4 landscape;margin:1.5cm}body{font-family:Arial,Tahoma,sans-serif}'+css+'</style></head><body><div class="out">'+clone.innerHTML+'</div></body></html>';
+  const blob=new Blob(['\ufeff',doc],{type:'application/msword;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='spss_result_'+stamp()+'.doc';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+};
+
+/* ---------- init ---------- */
+buildHead(); renderDvNames(); addRows(5); refreshGroups(true); updateModeUI(); applyLang();
+</script>
+</body>
+</html>
